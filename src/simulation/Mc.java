@@ -1,0 +1,18 @@
+package simulation;
+
+import OSPABA.*;
+
+public class Mc extends OSPABA.IdList
+{
+	//meta! userInfo="Generated code: do not modify", tag="begin"
+	public static final int reqZdrojeVstup = 1017;
+	public static final int resZdrojeVstup = 1019;
+	public static final int reqZdrojeOsetrenie = 1021;
+	public static final int requestResponse = 1023;
+	public static final int novyPacient = 1002;
+	public static final int presunNaOsetrenie = 1009;
+	public static final int odchodPacienta = 1012;
+	//meta! tag="end"
+
+	// 1..1000 range reserved for user
+}
