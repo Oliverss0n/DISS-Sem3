@@ -56,7 +56,7 @@
       <SimId>15</SimId>
       <InternalId>41</InternalId>
       <Name>AgentZdrojov</Name>
-      <Bounds>1927,296,180,180</Bounds>
+      <Bounds>1871,686,180,180</Bounds>
       <Reasoner>ManagerZdrojov</Reasoner>
       <ReasonerBounds>74,25,32,25</ReasonerBounds>
       <UsePetriNet>false</UsePetriNet>
@@ -276,5 +276,5 @@
       <Destination>30</Destination>
     </Message>
   </Messages>
-  <IID>131</IID>
+  <IID>132</IID>
 </ABAsim>
