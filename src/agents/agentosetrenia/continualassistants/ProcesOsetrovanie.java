@@ -23,6 +23,7 @@ public class ProcesOsetrovanie extends OSPABA.Process
 	//meta! sender="AgentOsetrenia", id="88", type="Start"
 	public void processStart(MessageForm message)
 	{
+		hold(1200.0, message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

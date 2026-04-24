@@ -27,17 +27,30 @@ public class ManagerOsetrenia extends OSPABA.Manager
 	//meta! sender="AgentUrgentu", id="58", type="Notice"
 	public void processPresunNaOsetrenie(MessageForm message)
 	{
+		message.setCode(Mc.reqZdrojeOsetrenie);
+		message.setAddressee(mySim().findAgent(Id.agentUrgentu));
+		request(message);
 	}
 
-	//meta! sender="AgentUrgentu", id="75", type="Response"
+	//meta! sender="AgentUrgentu", id="78", type="Request"
 	public void processReqZdrojeOsetrenieAgentUrgentu(MessageForm message)
 	{
+		message.setAddressee(myAgent().findAssistant(Id.procesOsetrovanie));
+		startContinualAssistant(message);
 	}
 
 
 	//meta! sender="ProcesOsetrovanie", id="88", type="Finish"
 	public void processFinish(MessageForm message)
 	{
+		MessageForm vratenieZdrojov = message.createCopy();
+		vratenieZdrojov.setCode(Mc.requestResponse);
+		vratenieZdrojov.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		notice(vratenieZdrojov);
+
+		message.setCode(Mc.odchodPacienta);
+		message.setAddressee(myAgent().parent());
+		notice(message);
 	}
 
 	//meta! sender="AgentUrgentu", id="73", type="Request"
@@ -52,6 +65,7 @@ public class ManagerOsetrenia extends OSPABA.Manager
 		{
 		}
 	}
+
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	public void init()
@@ -73,6 +87,7 @@ public class ManagerOsetrenia extends OSPABA.Manager
 			case Id.agentUrgentu:
 				processReqZdrojeOsetrenieAgentUrgentu(message);
 			break;
+
 			}
 		break;
 

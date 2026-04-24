@@ -7,6 +7,7 @@ import agents.agentokolia.continualassistants.*;
 //meta! id="5"
 public class AgentOkolia extends OSPABA.Agent
 {
+	//test
 	public AgentOkolia(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);

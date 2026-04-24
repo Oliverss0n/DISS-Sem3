@@ -23,6 +23,7 @@ public class ProcesVstup extends OSPABA.Process
 	//meta! sender="AgentVstupnehoVystrenia", id="84", type="Start"
 	public void processStart(MessageForm message)
 	{
+		hold(300.0, message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

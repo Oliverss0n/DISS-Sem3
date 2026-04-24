@@ -27,11 +27,14 @@ public class ManagerBoss extends OSPABA.Manager
 	//meta! sender="AgentOkolia", id="48", type="Notice"
 	public void processNovyPacient(MessageForm message)
 	{
+		message.setAddressee(mySim().findAgent(Id.agentUrgentu));
+		notice(message);
 	}
 
 	//meta! sender="AgentUrgentu", id="61", type="Notice"
 	public void processOdchodPacienta(MessageForm message)
 	{
+		//DOPLNIT STATISTIKY A DALSIE ZALEZITOSTI
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

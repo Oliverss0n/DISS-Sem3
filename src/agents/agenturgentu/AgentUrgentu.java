@@ -2,6 +2,7 @@ package agents.agenturgentu;
 
 import OSPABA.*;
 import simulation.*;
+import agents.agenturgentu.continualassistants.*;
 
 //meta! id="30"
 public class AgentUrgentu extends OSPABA.Agent
@@ -23,6 +24,7 @@ public class AgentUrgentu extends OSPABA.Agent
 	private void init()
 	{
 		new ManagerUrgentu(Id.managerUrgentu, mySim(), this);
+		new ProcessChodba(Id.processChodba, mySim(), this);
 		addOwnMessage(Mc.presunNaOsetrenie);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
 		addOwnMessage(Mc.reqZdrojeVstup);

@@ -1,11 +1,21 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
+import OSPStat.Stat;
 import simulation.*;
+
+import java.util.LinkedList;
+import java.util.Queue;
 
 //meta! id="41"
 public class ManagerZdrojov extends OSPABA.Manager
 {
+
+	private int volneSestryVstup;
+	private int volneAmbulancieVstup;
+	private Queue<MessageForm> radVstup;
+	//public Stat statCakanieVstup;
+
 	public ManagerZdrojov(int id, Simulation mySim, Agent myAgent)
 	{
 		super(id, mySim, myAgent);
@@ -22,6 +32,12 @@ public class ManagerZdrojov extends OSPABA.Manager
 		{
 			petriNet().clear();
 		}
+
+		this.volneSestryVstup = 1;
+		this.volneAmbulancieVstup = 1;
+		this.radVstup = new LinkedList<>();
+
+
 	}
 
 	//meta! sender="AgentUrgentu", id="76", type="Response"
@@ -29,19 +45,21 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 	}
 
-	//meta! sender="AgentUrgentu", id="64", type="Request"
-	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
-	{
-	}
-
-	//meta! sender="AgentUrgentu", id="69", type="Response"
-	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
-	{
-	}
-
 	//meta! sender="AgentUrgentu", id="77", type="Response"
 	public void processRequestResponse(MessageForm message)
 	{
+		this.volneSestryVstup++;
+		this.volneAmbulancieVstup++;
+
+		if (!this.radVstup.isEmpty()) {
+
+			MessageForm nextMsg = this.radVstup.poll();
+
+			this.volneSestryVstup--;
+			this.volneAmbulancieVstup--;
+			response(nextMsg);
+		}
+
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
@@ -50,6 +68,20 @@ public class ManagerZdrojov extends OSPABA.Manager
 		switch (message.code())
 		{
 		}
+	}
+
+	//meta! sender="AgentUrgentu", id="64", type="Request"
+	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
+	{
+		if (this.volneSestryVstup > 0 && this.volneAmbulancieVstup > 0) {
+
+			this.volneSestryVstup--;
+			this.volneAmbulancieVstup--;
+			response(message);
+		} else {
+			this.radVstup.add(message);
+		}
+
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -69,9 +101,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 				processReqZdrojeVstupAgentUrgentu(message);
 			break;
 
-			case Id.agentUrgentu:
-				processReqZdrojeVstupAgentUrgentu(message);
-			break;
 			}
 		break;
 

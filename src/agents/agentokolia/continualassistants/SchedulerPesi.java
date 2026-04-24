@@ -11,8 +11,8 @@ import simulation.*;
 public class SchedulerPesi extends OSPABA.Scheduler
 {
 
-	//Exponencialne
-	private ExponentialRNG walkInArrivalsRNG = new ExponentialRNG(572.6);
+	private ExponentialRNG walkArrivals = new ExponentialRNG(572.6);
+
 	public SchedulerPesi(int id, Simulation mySim, CommonAgent myAgent)
 	{
 		super(id, mySim, myAgent);
@@ -28,26 +28,31 @@ public class SchedulerPesi extends OSPABA.Scheduler
 	//meta! sender="AgentOkolia", id="8", type="Start"
 	public void processStart(MessageForm message)
 	{
-		message.setCode(Mc.novyPacient);
-		hold(1800.0, message);
+		// 1. Vygenerujeme čas, kedy príde ďalší peší pacient
+		double arrivalTime = walkArrivals.sample(); // [cite: 308, 411]
 
+		// 2. Vytvoríme entitu pacienta (false = prišiel pešo)
+		Patient newPatient = new Patient(false, mySim().currentTime());
+
+		// 3. Oznámime manažérovi (AgentOkolia), že niekto prišiel
+		MyMessage noticeMsg = new MyMessage(mySim());
+		noticeMsg.setPatient(newPatient);
+		noticeMsg.setCode(Mc.novyPacient);
+		noticeMsg.setAddressee(myAgent());
+		notice(noticeMsg); //
+
+		// 4. Urobíme kópiu štartovacej správy a pošleme ju do "budúcnosti"
+		// Keďže jej nemeníme kód, vráti sa ako Mc.start a znova spustí túto metódu
+		MessageForm copy = message.createCopy();
+		hold(arrivalTime, copy); // [cite: 320]
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
 	public void processDefault(MessageForm message)
 	{
-		// 1. Vytvoríme entitu pacienta (FALSE = prišiel pešo)
-		Patient newPatient = new Patient(false, mySim().currentTime());
-
-		// 2. Vytvoríme novú obálku (MyMessage), vložíme pacienta a pošleme šéfovi
-		MyMessage noticeMsg = new MyMessage(mySim());
-		noticeMsg.setPatient(newPatient);
-		noticeMsg.setCode(Mc.novyPacient);
-		noticeMsg.setAddressee(myAgent());
-		notice(noticeMsg); // Odošli
-
-		// 3. Pôvodnú obálku pošleme ZNOVA do budúcnosti
-		hold(1800.0, message);
+		switch (message.code())
+		{
+		}
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"

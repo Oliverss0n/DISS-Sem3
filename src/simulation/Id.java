@@ -21,5 +21,6 @@ public class Id extends OSPABA.IdList
 	public static final int schedulerSanitka = 1002;
 	public static final int procesVstup = 1003;
 	public static final int procesOsetrovanie = 1004;
+	public static final int processChodba = 1005;
 	//meta! tag="end"
 }

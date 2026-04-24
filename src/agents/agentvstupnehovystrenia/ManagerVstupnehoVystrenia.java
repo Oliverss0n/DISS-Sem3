@@ -27,16 +27,31 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 	//meta! sender="AgentUrgentu", id="63", type="Response"
 	public void processReqZdrojeVstup(MessageForm message)
 	{
+		message.setAddressee(myAgent().findAssistant(Id.procesVstup));
+		startContinualAssistant(message);
 	}
 
 	//meta! sender="ProcesVstup", id="84", type="Finish"
 	public void processFinish(MessageForm message)
 	{
+		MessageForm vratenieZdrojov = message.createCopy();
+		vratenieZdrojov.setCode(Mc.requestResponse);
+		vratenieZdrojov.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		notice(vratenieZdrojov);
+
+		message.setCode(Mc.presunNaOsetrenie);
+		message.setAddressee(myAgent().parent());
+		notice(message);
+
 	}
 
 	//meta! sender="AgentUrgentu", id="51", type="Notice"
 	public void processNovyPacient(MessageForm message)
 	{
+		message.setCode(Mc.reqZdrojeVstup);
+		message.setAddressee(mySim().findAgent(Id.agentUrgentu));
+
+		request(message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
