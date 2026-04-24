@@ -37,8 +37,9 @@ public class ManagerOkolia extends OSPABA.Manager
 	//meta! userInfo="Process messages defined in code", id="0"
 	public void processDefault(MessageForm message)
 	{
-		switch (message.code())
-		{
+		if (message.code() == Mc.novyPacient) {
+			message.setAddressee(myAgent().parent());
+			notice(message);
 		}
 	}
 

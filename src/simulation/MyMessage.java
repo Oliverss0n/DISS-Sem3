@@ -1,9 +1,13 @@
 package simulation;
 
 import OSPABA.*;
+import entities.Patient;
 
 public class MyMessage extends OSPABA.MessageForm
 {
+
+	private Patient patient;
+
 	public MyMessage(Simulation mySim)
 	{
 		super(mySim);
@@ -12,7 +16,7 @@ public class MyMessage extends OSPABA.MessageForm
 	public MyMessage(MyMessage original)
 	{
 		super(original);
-		// copy() is called in superclass
+		this.patient = original.getPatient();
 	}
 
 	@Override
@@ -28,4 +32,13 @@ public class MyMessage extends OSPABA.MessageForm
 		MyMessage original = (MyMessage)message;
 		// Copy attributes
 	}
+
+	public Patient getPatient() {
+		return patient;
+	}
+	public void setPatient(Patient patient) {
+		this.patient = patient;
+	}
+
+
 }

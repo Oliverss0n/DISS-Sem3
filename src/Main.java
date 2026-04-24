@@ -3,6 +3,7 @@ import OSPABA.*;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println(" wdeadds!");
+        Agent agent = new Agent(0, null,null);
+        System.out.println("Hello world!");
     }
 }

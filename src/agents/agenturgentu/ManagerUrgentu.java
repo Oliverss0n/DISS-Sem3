@@ -39,11 +39,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 	{
 	}
 
-	//meta! sender="AgentOsetrenia", id="78", type="Response"
-	public void processReqZdrojeOsetrenieAgentOsetrenia(MessageForm message)
-	{
-	}
-
 	//meta! sender="AgentVstupnehoVystrenia", id="63", type="Request"
 	public void processReqZdrojeVstupAgentVstupnehoVystrenia(MessageForm message)
 	{
@@ -54,10 +49,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 	{
 	}
 
-	//meta! sender="AgentZdrojov", id="69", type="Request"
-	public void processReqZdrojeVstupAgentZdrojov(MessageForm message)
-	{
-	}
 
 	//meta! sender="AgentZdrojov", id="77", type="Request"
 	public void processRequestResponse(MessageForm message)
@@ -112,9 +103,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 				processReqZdrojeVstupAgentZdrojov(message);
 			break;
 
-			case Id.agentZdrojov:
-				processReqZdrojeVstupAgentZdrojov(message);
-			break;
 			}
 		break;
 
@@ -133,9 +121,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 				processReqZdrojeOsetrenieAgentZdrojov(message);
 			break;
 
-			case Id.agentOsetrenia:
-				processReqZdrojeOsetrenieAgentOsetrenia(message);
-			break;
 			}
 		break;
 

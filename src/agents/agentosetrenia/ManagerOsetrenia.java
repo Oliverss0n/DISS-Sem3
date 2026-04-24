@@ -34,10 +34,6 @@ public class ManagerOsetrenia extends OSPABA.Manager
 	{
 	}
 
-	//meta! sender="AgentUrgentu", id="78", type="Request"
-	public void processReqZdrojeOsetrenieAgentUrgentu(MessageForm message)
-	{
-	}
 
 	//meta! sender="ProcesOsetrovanie", id="88", type="Finish"
 	public void processFinish(MessageForm message)
@@ -74,10 +70,6 @@ public class ManagerOsetrenia extends OSPABA.Manager
 		case Mc.reqZdrojeOsetrenie:
 			switch (message.sender().id())
 			{
-			case Id.agentUrgentu:
-				processReqZdrojeOsetrenieAgentUrgentu(message);
-			break;
-
 			case Id.agentUrgentu:
 				processReqZdrojeOsetrenieAgentUrgentu(message);
 			break;
