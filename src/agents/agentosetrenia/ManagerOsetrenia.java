@@ -28,34 +28,23 @@ public class ManagerOsetrenia extends OSPABA.Manager
 	public void processPresunNaOsetrenie(MessageForm message)
 	{
 		message.setCode(Mc.reqZdrojeOsetrenie);
-		message.setAddressee(mySim().findAgent(Id.agentUrgentu));
+		message.setAddressee(myAgent().parent());
 		request(message);
 	}
 
-	//meta! sender="AgentUrgentu", id="78", type="Request"
-	public void processReqZdrojeOsetrenieAgentUrgentu(MessageForm message)
-	{
-		message.setAddressee(myAgent().findAssistant(Id.procesOsetrovanie));
-		startContinualAssistant(message);
-	}
 
 
 	//meta! sender="ProcesOsetrovanie", id="88", type="Finish"
 	public void processFinish(MessageForm message)
 	{
 		MessageForm vratenieZdrojov = message.createCopy();
-		vratenieZdrojov.setCode(Mc.requestResponse);
-		vratenieZdrojov.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		vratenieZdrojov.setCode(Mc.uvolniZdrojeOsetrenie);
+		vratenieZdrojov.setAddressee(myAgent().parent());
 		notice(vratenieZdrojov);
 
 		message.setCode(Mc.odchodPacienta);
 		message.setAddressee(myAgent().parent());
 		notice(message);
-	}
-
-	//meta! sender="AgentUrgentu", id="73", type="Request"
-	public void processResZdrojeVstup(MessageForm message)
-	{
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
@@ -66,6 +55,12 @@ public class ManagerOsetrenia extends OSPABA.Manager
 		}
 	}
 
+	//meta! sender="AgentUrgentu", id="127", type="Response"
+	public void processReqZdrojeOsetrenie(MessageForm message)
+	{
+		message.setAddressee(myAgent().findAssistant(Id.procesOsetrovanie));
+		startContinualAssistant(message);
+	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	public void init()
@@ -77,26 +72,16 @@ public class ManagerOsetrenia extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.resZdrojeVstup:
-			processResZdrojeVstup(message);
-		break;
-
-		case Mc.reqZdrojeOsetrenie:
-			switch (message.sender().id())
-			{
-			case Id.agentUrgentu:
-				processReqZdrojeOsetrenieAgentUrgentu(message);
-			break;
-
-			}
+		case Mc.finish:
+			processFinish(message);
 		break;
 
 		case Mc.presunNaOsetrenie:
 			processPresunNaOsetrenie(message);
 		break;
 
-		case Mc.finish:
-			processFinish(message);
+		case Mc.reqZdrojeOsetrenie:
+			processReqZdrojeOsetrenie(message);
 		break;
 
 		default:

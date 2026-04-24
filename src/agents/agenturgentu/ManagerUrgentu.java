@@ -16,12 +16,19 @@ public class ManagerUrgentu extends OSPABA.Manager
 	public void prepareReplication()
 	{
 		super.prepareReplication();
-		// Setup component for the next replication
-
 		if (petriNet() != null)
 		{
 			petriNet().clear();
 		}
+	}
+
+	// --- CHODBA ---
+
+	//meta! sender="AgentBoss", id="50", type="Notice"
+	public void processNovyPacient(MessageForm message)
+	{
+		message.setAddressee(myAgent().findAssistant(Id.processChodba));
+		startContinualAssistant(message);
 	}
 
 	//meta! sender="AgentVstupnehoVystrenia", id="56", type="Notice"
@@ -31,28 +38,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 		startContinualAssistant(message);
 	}
 
-
-	//meta! sender="AgentZdrojov", id="76", type="Request"
-	public void processReqZdrojeOsetrenieAgentZdrojov(MessageForm message)
-	{
-		message.setAddressee(mySim().findAgent(Id.agentOsetrenia));
-		notice(message);
-	}
-
-	//meta! sender="AgentVstupnehoVystrenia", id="63", type="Request"
-	public void processReqZdrojeVstupAgentVstupnehoVystrenia(MessageForm message)
-	{
-		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
-		notice(message);
-	}
-
-	
-
-	//meta! sender="AgentZdrojov", id="77", type="Request"
-	public void processRequestResponse(MessageForm message)
-	{
-	}
-
 	//meta! sender="AgentOsetrenia", id="59", type="Notice"
 	public void processOdchodPacienta(MessageForm message)
 	{
@@ -60,38 +45,9 @@ public class ManagerUrgentu extends OSPABA.Manager
 		startContinualAssistant(message);
 	}
 
-	//meta! sender="AgentBoss", id="50", type="Notice"
-	public void processNovyPacient(MessageForm message)
-	{
-		message.setAddressee(myAgent().findAssistant(Id.processChodba));
-		startContinualAssistant(message);
-	}
-
-	//meta! sender="AgentOsetrenia", id="73", type="Response"
-	public void processResZdrojeVstup(MessageForm message)
-	{
-	}
-
-	//meta! userInfo="Process messages defined in code", id="0"
-	public void processDefault(MessageForm message)
-	{
-		switch (message.code())
-		{
-		}
-	}
-
-	//meta! sender="AgentOsetrenia", id="78", type="Response"
-	public void processReqZdrojeOsetrenieAgentOsetrenia(MessageForm message)
-	{
-		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
-		notice(message);
-	}
-
-
 	//meta! sender="ProcessChodba", id="94", type="Finish"
 	public void processFinish(MessageForm message)
 	{
-		//kam ide pacient
 		if (message.code() == Mc.novyPacient) {
 			message.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
 			notice(message);
@@ -106,14 +62,60 @@ public class ManagerUrgentu extends OSPABA.Manager
 		}
 	}
 
-	//meta! sender="AgentZdrojov", id="64", type="Response"
+	// --- PREPOSIELANIE PRE VSTUP (Poštár) ---
+
+	//meta! sender="AgentVstupnehoVystrenia", id="104", type="Request"
+	public void processReqZdrojeVstupAgentVstupnehoVystrenia(MessageForm message)
+	{
+		// Z Vstupu do Zdrojov
+		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		request(message);
+	}
+
+	//meta! sender="AgentZdrojov", id="69", type="Response"
 	public void processReqZdrojeVstupAgentZdrojov(MessageForm message)
 	{
-		message.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
+		// Zo Zdrojov späť na Vstup
+		response(message);
+	}
+
+	//meta! sender="AgentVstupnehoVystrenia", id="108", type="Notice"
+	public void processUvolniZdrojeVstup(MessageForm message)
+	{
+		// Z Vstupu uvoľnenie do Zdrojov
+		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
 		notice(message);
 	}
 
-	//meta! userInfo="Generated code: do not modify", tag="begin"
+	// --- PREPOSIELANIE PRE OŠETRENIE (Poštár) ---
+
+	//meta! sender="AgentOsetrenia", id="127", type="Request"
+	public void processReqZdrojeOsetrenieAgentOsetrenia(MessageForm message)
+	{
+		// Z Ošetrenia do Zdrojov
+		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		request(message);
+	}
+
+	//meta! sender="AgentZdrojov", id="110", type="Response"
+	public void processReqZdrojeOsetrenieAgentZdrojov(MessageForm message)
+	{
+		// Zo Zdrojov späť na Ošetrenie
+		response(message);
+	}
+
+	//meta! sender="AgentOsetrenia", id="109", type="Notice"
+	public void processUvolniZdrojeOsetrenie(MessageForm message)
+	{
+		// Z Ošetrenia uvoľnenie do Zdrojov
+		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
+		notice(message);
+	}
+
+	public void processDefault(MessageForm message)
+	{
+	}
+
 	public void init()
 	{
 	}
@@ -123,70 +125,63 @@ public class ManagerUrgentu extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.odchodPacienta:
-			processOdchodPacienta(message);
-		break;
+			case Mc.finish:
+				processFinish(message);
+				break;
 
-		case Mc.reqZdrojeVstup:
-			switch (message.sender().id())
-			{
-			case Id.agentVstupnehoVystrenia:
-				processReqZdrojeVstupAgentVstupnehoVystrenia(message);
-			break;
+			case Mc.reqZdrojeVstup:
+				switch (message.sender().id())
+				{
+					case Id.agentVstupnehoVystrenia:
+						processReqZdrojeVstupAgentVstupnehoVystrenia(message);
+						break;
+					case Id.agentZdrojov:
+						processReqZdrojeVstupAgentZdrojov(message);
+						break;
+				}
+				break;
 
-			case Id.agentZdrojov:
-				processReqZdrojeVstupAgentZdrojov(message);
-			break;
+			case Mc.reqZdrojeOsetrenie:
+				switch (message.sender().id())
+				{
+					case Id.agentZdrojov:
+						processReqZdrojeOsetrenieAgentZdrojov(message);
+						break;
+					case Id.agentOsetrenia:
+						processReqZdrojeOsetrenieAgentOsetrenia(message);
+						break;
+				}
+				break;
 
-			}
-		break;
+			case Mc.uvolniZdrojeOsetrenie:
+				processUvolniZdrojeOsetrenie(message);
+				break;
 
-		case Mc.novyPacient:
-			processNovyPacient(message);
-		break;
+			case Mc.novyPacient:
+				processNovyPacient(message);
+				break;
 
-		case Mc.reqZdrojeOsetrenie:
-			switch (message.sender().id())
-			{
+			case Mc.uvolniZdrojeVstup:
+				processUvolniZdrojeVstup(message);
+				break;
 
+			case Mc.odchodPacienta:
+				processOdchodPacienta(message);
+				break;
 
-			case Id.agentZdrojov:
-				processReqZdrojeOsetrenieAgentZdrojov(message);
-			break;
+			case Mc.presunNaOsetrenie:
+				processPresunNaOsetrenie(message);
+				break;
 
-			case Id.agentOsetrenia:
-				processReqZdrojeOsetrenieAgentOsetrenia(message);
-			break;
-			}
-		break;
-
-		case Mc.requestResponse:
-			processRequestResponse(message);
-		break;
-
-		case Mc.presunNaOsetrenie:
-			processPresunNaOsetrenie(message);
-		break;
-
-		case Mc.finish:
-			processFinish(message);
-		break;
-
-		case Mc.resZdrojeVstup:
-			processResZdrojeVstup(message);
-		break;
-
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
-	//meta! tag="end"
 
 	@Override
 	public AgentUrgentu myAgent()
 	{
 		return (AgentUrgentu)super.myAgent();
 	}
-
 }

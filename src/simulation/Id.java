@@ -17,10 +17,10 @@ public class Id extends OSPABA.IdList
 	public static final int managerOsetrenia = 114;
 	public static final int managerZdrojov = 115;
 	public static final int managerUrgentu = 110;
-	public static final int schedulerPesi = 1001;
-	public static final int schedulerSanitka = 1002;
 	public static final int procesVstup = 1003;
+	public static final int schedulerPesi = 1001;
 	public static final int procesOsetrovanie = 1004;
+	public static final int schedulerSanitka = 1002;
 	public static final int processChodba = 1005;
 	//meta! tag="end"
 }

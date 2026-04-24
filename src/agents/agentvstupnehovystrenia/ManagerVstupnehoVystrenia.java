@@ -35,7 +35,7 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 	public void processFinish(MessageForm message)
 	{
 		MessageForm vratenieZdrojov = message.createCopy();
-		vratenieZdrojov.setCode(Mc.requestResponse);
+		vratenieZdrojov.setCode(Mc.uvolniZdrojeVstup);
 		vratenieZdrojov.setAddressee(mySim().findAgent(Id.agentZdrojov));
 		notice(vratenieZdrojov);
 
@@ -62,6 +62,11 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 		}
 	}
 
+	//meta! userInfo="Removed from model"
+	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
+	{
+	}
+
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	public void init()
 	{
@@ -76,12 +81,12 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 			processReqZdrojeVstup(message);
 		break;
 
-		case Mc.finish:
-			processFinish(message);
-		break;
-
 		case Mc.novyPacient:
 			processNovyPacient(message);
+		break;
+
+		case Mc.finish:
+			processFinish(message);
 		break;
 
 		default:

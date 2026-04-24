@@ -27,11 +27,11 @@ public class AgentUrgentu extends OSPABA.Agent
 		new ProcessChodba(Id.processChodba, mySim(), this);
 		addOwnMessage(Mc.presunNaOsetrenie);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
+		addOwnMessage(Mc.uvolniZdrojeVstup);
 		addOwnMessage(Mc.reqZdrojeVstup);
-		addOwnMessage(Mc.requestResponse);
-		addOwnMessage(Mc.odchodPacienta);
+		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 		addOwnMessage(Mc.novyPacient);
-		addOwnMessage(Mc.resZdrojeVstup);
+		addOwnMessage(Mc.odchodPacienta);
 	}
 	//meta! tag="end"
 }

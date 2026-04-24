@@ -40,12 +40,12 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 	}
 
-	//meta! sender="AgentUrgentu", id="76", type="Response"
+	//meta! sender="AgentUrgentu", id="110", type="Request"
 	public void processReqZdrojeOsetrenie(MessageForm message)
 	{
 	}
 
-	//meta! sender="AgentUrgentu", id="77", type="Response"
+	//meta! userInfo="Removed from model"
 	public void processRequestResponse(MessageForm message)
 	{
 		this.volneSestryVstup++;
@@ -71,7 +71,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 	}
 
 	//meta! sender="AgentUrgentu", id="64", type="Request"
-	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
+	public void processReqZdrojeVstup(MessageForm message)
 	{
 		if (this.volneSestryVstup > 0 && this.volneAmbulancieVstup > 0) {
 
@@ -84,6 +84,26 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 	}
 
+	//meta! userInfo="Removed from model"
+	public void processReqZdrojeOsetrenieAgentUrgentu(MessageForm message)
+	{
+	}
+
+	//meta! sender="AgentUrgentu", id="112", type="Notice"
+	public void processUvolniZdrojeVstup(MessageForm message)
+	{
+	}
+
+	//meta! sender="AgentUrgentu", id="113", type="Notice"
+	public void processUvolniZdrojeOsetrenie(MessageForm message)
+	{
+	}
+
+	//meta! userInfo="Removed from model"
+	public void processReqZdrojeVstupAgentUrgentu(MessageForm message)
+	{
+	}
+
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	public void init()
 	{
@@ -94,22 +114,20 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.reqZdrojeVstup:
-			switch (message.sender().id())
-			{
-			case Id.agentUrgentu:
-				processReqZdrojeVstupAgentUrgentu(message);
-			break;
+		case Mc.uvolniZdrojeVstup:
+			processUvolniZdrojeVstup(message);
+		break;
 
-			}
+		case Mc.uvolniZdrojeOsetrenie:
+			processUvolniZdrojeOsetrenie(message);
 		break;
 
 		case Mc.reqZdrojeOsetrenie:
 			processReqZdrojeOsetrenie(message);
 		break;
 
-		case Mc.requestResponse:
-			processRequestResponse(message);
+		case Mc.reqZdrojeVstup:
+			processReqZdrojeVstup(message);
 		break;
 
 		default:

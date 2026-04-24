@@ -27,7 +27,6 @@ public class AgentOsetrenia extends OSPABA.Agent
 		new ProcesOsetrovanie(Id.procesOsetrovanie, mySim(), this);
 		addOwnMessage(Mc.presunNaOsetrenie);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
-		addOwnMessage(Mc.resZdrojeVstup);
 	}
 	//meta! tag="end"
 }

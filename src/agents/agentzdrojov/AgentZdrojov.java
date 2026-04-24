@@ -24,8 +24,9 @@ public class AgentZdrojov extends OSPABA.Agent
 	{
 		new ManagerZdrojov(Id.managerZdrojov, mySim(), this);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
+		addOwnMessage(Mc.uvolniZdrojeVstup);
+		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 		addOwnMessage(Mc.reqZdrojeVstup);
-		addOwnMessage(Mc.requestResponse);
 	}
 	//meta! tag="end"
 }
