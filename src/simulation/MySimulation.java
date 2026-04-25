@@ -8,8 +8,11 @@ import agents.agentboss.*;
 import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
 
+import java.util.Random;
+
 public class MySimulation extends OSPABA.Simulation
 {
+	protected Random genSeed;
 	public MySimulation()
 	{
 		init();
@@ -46,6 +49,7 @@ public class MySimulation extends OSPABA.Simulation
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	private void init()
 	{
+		this.genSeed = new Random();
 		setAgentBoss(new AgentBoss(Id.agentBoss, this, null));
 		setAgentOkolia(new AgentOkolia(Id.agentOkolia, this, agentBoss()));
 		setAgentUrgentu(new AgentUrgentu(Id.agentUrgentu, this, agentBoss()));
@@ -102,4 +106,9 @@ public AgentZdrojov agentZdrojov()
 	public void setAgentZdrojov(AgentZdrojov agentZdrojov)
 	{_agentZdrojov = agentZdrojov; }
 	//meta! tag="end"
+
+
+	public Random getGenSeed() {
+		return genSeed;
+	}
 }

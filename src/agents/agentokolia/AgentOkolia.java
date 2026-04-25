@@ -1,17 +1,28 @@
 package agents.agentokolia;
 
+import Distributions.ErlangDist;
+import Distributions.ExponentialDist;
 import OSPABA.*;
+import OSPRNG.ErlangRNG;
 import simulation.*;
 import agents.agentokolia.continualassistants.*;
 
 //meta! id="5"
 public class AgentOkolia extends OSPABA.Agent
 {
+	private ExponentialDist walkArrivals;
+	private ErlangDist ambulanceArrivals;
 	//test
 	public AgentOkolia(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);
 		init();
+
+		MySimulation sim = (MySimulation) mySim;
+
+		walkArrivals = new ExponentialDist(572.6, sim.getGenSeed());
+		ambulanceArrivals = new ErlangDist(8, 364.5, -13.5, sim.getGenSeed());
+
 	}
 
 	@Override
@@ -29,4 +40,13 @@ public class AgentOkolia extends OSPABA.Agent
 		new SchedulerSanitka(Id.schedulerSanitka, mySim(), this);
 	}
 	//meta! tag="end"
+
+
+	public ExponentialDist getWalkArrivals() {
+		return walkArrivals;
+	}
+
+	public ErlangDist getAmbulanceArrivals() {
+		return ambulanceArrivals;
+	}
 }

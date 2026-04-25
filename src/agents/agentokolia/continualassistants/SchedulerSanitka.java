@@ -1,6 +1,7 @@
 package agents.agentokolia.continualassistants;
 
 import OSPABA.*;
+import OSPRNG.ErlangRNG;
 import OSPRNG.GammaRNG;
 import agents.agentokolia.*;
 import entities.Patient;
@@ -10,9 +11,6 @@ import simulation.*;
 public class SchedulerSanitka extends OSPABA.Scheduler
 {
 
-	//test
-	//GAMMA
-	GammaRNG ambulanceArrivals = new GammaRNG(0.0, 49.86, 7.04);
 
 	public SchedulerSanitka(int id, Simulation mySim, CommonAgent myAgent)
 	{
@@ -31,7 +29,7 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 	public void processStart(MessageForm message)
 	{
 		// 1. Vygenerujeme čas do ďalšieho príchodu
-		double arrivalTime = ambulanceArrivals.sample();
+		double arrivalTime = myAgent().getAmbulanceArrivals().sample();
 
 		// 2. Vytvoríme pacienta (ale pozor, pacient prišiel PRÁVE TERAZ)
 		Patient newPatient = new Patient(true, mySim().currentTime());

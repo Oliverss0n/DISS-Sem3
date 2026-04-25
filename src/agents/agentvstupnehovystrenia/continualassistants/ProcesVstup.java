@@ -1,6 +1,7 @@
 package agents.agentvstupnehovystrenia.continualassistants;
 
 import OSPABA.*;
+import entities.Patient;
 import simulation.*;
 import agents.agentvstupnehovystrenia.*;
 import OSPABA.Process;
@@ -23,7 +24,18 @@ public class ProcesVstup extends OSPABA.Process
 	//meta! sender="AgentVstupnehoVystrenia", id="84", type="Start"
 	public void processStart(MessageForm message)
 	{
-		hold(300.0, message);
+		MyMessage msg = (MyMessage) message;
+
+		Patient patient = msg.getPatient();
+		double duration = 0.0;
+
+		if (patient.isAmbulance()) {
+			duration = myAgent().getAmbualanceDurationGen().sample(); // použi svoju metódu na generovanie
+		} else {
+			duration = myAgent().getWalkInDurationGen().sample();
+		}
+
+		hold(duration * 60.0, message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

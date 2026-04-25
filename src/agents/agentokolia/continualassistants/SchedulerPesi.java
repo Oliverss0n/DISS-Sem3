@@ -1,5 +1,6 @@
 package agents.agentokolia.continualassistants;
 
+import Distributions.ExponentialDist;
 import OSPABA.*;
 import OSPRNG.ExponentialRNG;
 import OSPRNG.WeibullRNG;
@@ -10,8 +11,6 @@ import simulation.*;
 //meta! id="7"
 public class SchedulerPesi extends OSPABA.Scheduler
 {
-
-	private ExponentialRNG walkArrivals = new ExponentialRNG(572.6);
 
 	public SchedulerPesi(int id, Simulation mySim, CommonAgent myAgent)
 	{
@@ -29,7 +28,7 @@ public class SchedulerPesi extends OSPABA.Scheduler
 	public void processStart(MessageForm message)
 	{
 		// 1. Vygenerujeme čas, kedy príde ďalší peší pacient
-		double arrivalTime = walkArrivals.sample(); // [cite: 308, 411]
+		double arrivalTime = myAgent().getWalkArrivals().sample(); // [cite: 308, 411]
 
 		// 2. Vytvoríme entitu pacienta (false = prišiel pešo)
 		Patient newPatient = new Patient(false, mySim().currentTime());
