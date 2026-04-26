@@ -3,7 +3,7 @@ package entities;
 /**
  * Represents a patient as a passive entity (data object).
  */
-public class Patient {
+public class Patient implements Comparable<Patient> {
     private static int idCounter = 0;
     private String stav = "Kráča k recepcii";
 
@@ -89,5 +89,29 @@ public class Patient {
 
     public void setStav(String stav) {
         this.stav = stav;
+    }
+
+    @Override
+    public int compareTo(Patient iny) {
+
+        //vstupny rad pred priradenim priority
+        if (this.priority == -1 && iny.priority == -1) {
+            if (this.isAmbulance && !iny.isAmbulance){
+                return -1;
+            }
+            if (!this.isAmbulance && iny.isAmbulance) {
+                return 1;
+            }
+
+            return Double.compare(this.arrivalTimeQueueExam, iny.arrivalTimeQueueExam);
+        }
+
+        int prioCompare = Integer.compare(this.priority, iny.priority);
+
+        if (prioCompare != 0) {
+            return prioCompare;
+        }
+
+        return Double.compare(this.arrivalTimeQueueTreatment, iny.arrivalTimeQueueTreatment);
     }
 }

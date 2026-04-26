@@ -1,9 +1,13 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
+import entities.Patient;
 import simulation.*;
 import OSPDataStruct.SimQueue;
+
+import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.PriorityQueue;
 import java.util.Queue;
 
 //meta! id="41"
@@ -15,17 +19,17 @@ public class AgentZdrojov extends OSPABA.Agent
 	private int freeAmbulancesA;
 	private int freeAmbulancesB;
 
-	private Queue<MessageForm> queueEntrance;
-	private Queue<MessageForm> queueExaminationA;
-	private Queue<MessageForm> queueExaminationB;
+	private PriorityQueue<MessageForm> queueEntrance;
+	private PriorityQueue<MessageForm> queueExaminationA;
+	private PriorityQueue<MessageForm> queueExaminationB;
 
 	public AgentZdrojov(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);
 		init();
-		queueEntrance = new LinkedList<>();
-		queueExaminationA = new LinkedList<>();
-		queueExaminationB = new LinkedList<>();
+		queueEntrance = createPatientQueue();
+		queueExaminationA = createPatientQueue();
+		queueExaminationB = createPatientQueue();
 	}
 
 	@Override
@@ -92,27 +96,25 @@ public class AgentZdrojov extends OSPABA.Agent
 		this.freeAmbulancesB = freeAmbulancesB;
 	}
 
-	public Queue<MessageForm> getQueueEntrance() {
+	public PriorityQueue<MessageForm> getQueueEntrance() {
 		return queueEntrance;
 	}
 
-	public void setQueueEntrance(Queue<MessageForm> queueEntrance) {
-		this.queueEntrance = queueEntrance;
-	}
-
-	public Queue<MessageForm> getQueueExaminationA() {
+	public PriorityQueue<MessageForm> getQueueExaminationA() {
 		return queueExaminationA;
 	}
 
-	public void setQueueExaminationA(Queue<MessageForm> queueExaminationA) {
-		this.queueExaminationA = queueExaminationA;
-	}
-
-	public Queue<MessageForm> getQueueExaminationB() {
+	public PriorityQueue<MessageForm> getQueueExaminationB() {
 		return queueExaminationB;
 	}
 
-	public void setQueueExaminationB(Queue<MessageForm> queueExaminationB) {
-		this.queueExaminationB = queueExaminationB;
+
+
+	//POMOCNY METODA VYGENEROVANA AI
+	private PriorityQueue<MessageForm> createPatientQueue() {
+		return new PriorityQueue<>(
+				Comparator.comparing(msg -> ((MyMessage) msg).getPatient())
+		);
 	}
+
 }
