@@ -107,8 +107,8 @@ public class MainGUI extends JFrame implements ISimDelegate {
         cbVisualMode = new JCheckBox("Vizuálny režim", true);
 
         // Slider od 1 (najpomalšie) do 100 (najrýchlejšie)
-        speedSlider = new JSlider(1, 100, 50);
-        lblSpeedDisplay = new JLabel("Rýchlosť: 50");
+        speedSlider = new JSlider(1, 100, 10);
+        lblSpeedDisplay = new JLabel("Rýchlosť: 1.0x");
 
         btnStart = new JButton("Spustiť");
         btnPause = new JButton("Pauza");
@@ -281,21 +281,37 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     private void updateSimSpeed() {
         if (!cbVisualMode.isSelected()) {
-            sim.setMaxSimSpeed(); // Vypnutý vizuálny režim (zbehne to za sekundu)
+            sim.setMaxSimSpeed(); // Rýchlosť bez obmedzenia
+            lblSpeedDisplay.setText("Rýchlosť: MAX");
         } else {
-            double sliderValue = speedSlider.getValue(); // Hodnota 1 až 100
+            int sliderValue = speedSlider.getValue();
+            double speedMultiplier;
 
-            // Krok (koľko simulačných sekúnd zbehne naraz)
-            // Používame matematickú mocninu, aby pri stovke simulácia doslova letela
-            double interval = sliderValue * sliderValue;
+            // Logika rozdelenia slidera:
+            if (sliderValue < 10) {
+                // 1. SPOMALENÝ REŽIM (Slow-motion: 0.1x až 0.9x)
+                speedMultiplier = sliderValue / 10.0;
+            } else if (sliderValue == 10) {
+                // 2. REÁLNY ČAS (1:1)
+                speedMultiplier = 1.0;
+            } else {
+                // 3. ZRÝCHLENÝ REŽIM (Od 1.1x až po cca 4000x)
+                // Používame matematickú mocninu pre príjemné nelineárne zrýchľovanie
+                double base = sliderValue - 9;
+                speedMultiplier = (base * base) * 0.5;
+            }
 
-            // Zdržanie v reálnom čase (0.01 sekundy = 10 milisekúnd)
-            double duration = 0.01;
+            // OSPABA logika:
+            // duration = pauza v reálnom čase (0.02 sekundy = 50 FPS)
+            // interval = simulačný čas, ktorý prejde za túto pauzu
+            double duration = 0.02;
+            double interval = duration * speedMultiplier;
 
-            // Ak používateľ stiahne slider úplne na 1 (najpomalšie), ideme po 1 sekunde
-            if (sliderValue == 1) {
-                interval = 1.0;
-                duration = 0.5; // Pol sekundová pauza
+            // Formátovanie textu labelu
+            if (speedMultiplier < 10.0) {
+                lblSpeedDisplay.setText(String.format("Rýchlosť: %.1fx", speedMultiplier));
+            } else {
+                lblSpeedDisplay.setText(String.format("Rýchlosť: %.0fx", speedMultiplier));
             }
 
             sim.setSimSpeed(interval, duration);

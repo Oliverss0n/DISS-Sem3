@@ -8,20 +8,19 @@ import agents.agentboss.*;
 import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
 import entities.Patient;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 public class MySimulation extends OSPABA.Simulation
 {
 	protected Random genSeed = new Random();
-	private int numDoctors=5;
-	private int numNurses=5;
+	private int numDoctors;
+	private int numNurses;
 
 	//private List<Patient> activePatients = new LinkedList<>();
-	private List<Patient> activePatients = new CopyOnWriteArrayList<>();
+	private List<Patient> activePatients = Collections.synchronizedList(new ArrayList<>());
 	private boolean logEnabled = false; // Príznak vizuálneho režimu
 	private Consumer<String> logger;
 
@@ -43,6 +42,8 @@ public class MySimulation extends OSPABA.Simulation
 
 	public MySimulation()
 	{
+		this.numDoctors = 10;
+		this.numNurses = 10;
 		init();
 	}
 

@@ -34,6 +34,8 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 		// 2. Vytvoríme pacienta (ale pozor, pacient prišiel PRÁVE TERAZ)
 		Patient newPatient = new Patient(true, mySim().currentTime());
 
+		((MySimulation)mySim()).addPatient(newPatient);
+
 		//System.out.println(">>> DEBUG: Vygenerovaný SANITAK pacient ID: " + newPatient.getId() + " v čase " + mySim().currentTime());
 		// 3. Pošleme pacienta šéfovi cez Notice (správne z hľadiska teórie)
 		MyMessage noticeMsg = new MyMessage(mySim());
