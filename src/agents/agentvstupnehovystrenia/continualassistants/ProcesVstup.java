@@ -4,7 +4,6 @@ import OSPABA.*;
 import entities.Patient;
 import simulation.*;
 import agents.agentvstupnehovystrenia.*;
-import OSPABA.Process;
 
 //meta! id="83"
 public class ProcesVstup extends OSPABA.Process
@@ -27,15 +26,16 @@ public class ProcesVstup extends OSPABA.Process
 		MyMessage msg = (MyMessage) message;
 
 		Patient patient = msg.getPatient();
-		double duration = 0.0;
+		double duration = 0;
 
 		if (patient.isAmbulance()) {
-			duration = myAgent().getAmbualanceDurationGen().sample(); // použi svoju metódu na generovanie
+			duration = myAgent().getAmbualanceEntranceExamDurationGen().sample();
 		} else {
-			duration = myAgent().getWalkInDurationGen().sample();
+			duration = myAgent().getWalkInEntranceExamDurationGen().sample();
 		}
 
-		hold(duration * 60.0, message);
+		message.setCode(Mc.koniecZdrzania);
+		hold(duration * 60.0, message); //v zadani v minutach
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
@@ -55,6 +55,10 @@ public class ProcesVstup extends OSPABA.Process
 		case Mc.start:
 			processStart(message);
 		break;
+			// ZACHYTENIE ČISTÉHO KÓDU:
+			case Mc.koniecZdrzania:
+				assistantFinished(message);
+				break;
 
 		default:
 			processDefault(message);

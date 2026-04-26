@@ -7,12 +7,41 @@ import agents.agentzdrojov.*;
 import agents.agentboss.*;
 import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
+import entities.Patient;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 public class MySimulation extends OSPABA.Simulation
 {
 	protected Random genSeed;
+	private int numDoctors=5;
+	private int numNurses=5;
+
+	//private List<Patient> activePatients = new LinkedList<>();
+	private List<Patient> activePatients = new CopyOnWriteArrayList<>();
+	private boolean logEnabled = false; // Príznak vizuálneho režimu
+	private Consumer<String> logger;
+
+	public void setLogEnabled(boolean enabled) {
+		this.logEnabled = enabled;
+	}
+
+	public void setLogger(Consumer<String> logger) {
+		this.logger = logger;
+	}
+
+	public void log(String message) {
+		// Ak nie je zapnutý vizuálny režim, metóda skončí okamžite
+		// Tým sa vyhneme réžii so SwingUtilities a prekresľovaním GUI
+		if (logEnabled && logger != null) {
+			logger.accept(String.format("[%.2f] %s", currentTime(), message));
+		}
+	}
+
 	public MySimulation()
 	{
 		init();
@@ -29,6 +58,10 @@ public class MySimulation extends OSPABA.Simulation
 	public void prepareReplication()
 	{
 		super.prepareReplication();
+		activePatients.clear();
+
+		// Vynulujeme IDčka pacientov od 0
+		Patient.resetIdCounter();
 		// Reset entities, queues, local statistics, etc...
 	}
 
@@ -107,6 +140,62 @@ public AgentZdrojov agentZdrojov()
 	{_agentZdrojov = agentZdrojov; }
 	//meta! tag="end"
 
+//-----------------------------------------MOJE METODY--------------------------------------------------//
+
+	public void addPatient(Patient p) {
+		activePatients.add(p);
+	}
+
+	public void removePatient(Patient p) {
+		activePatients.remove(p);
+	}
+
+	public List<Patient> getActivePatients() {
+		return activePatients;
+	}
+
+	public int getNumDoctors() {
+		return numDoctors;
+	}
+
+	public void setNumDoctors(int numDoctors) {
+		this.numDoctors = numDoctors;
+	}
+
+	public int getNumNurses() {
+		return numNurses;
+	}
+
+	public void setNumNurses(int numNurses) {
+		this.numNurses = numNurses;
+	}
+
+	// OPRAVA: Voláme .size() na fronte, ktorú nám vráti AgentZdrojov
+	public int getQueueEntranceSize() {
+		return agentZdrojov().getQueueEntrance().size();
+	}
+
+	// OPRAVA: Keďže teraz máme dva fronty na ošetrenie, pre GUI ich môžeme sčítať (alebo urobiť dve samostatné metódy, ak to chceš v GUI vidieť oddelene)
+	public int getQueueExamSize() {
+		return agentZdrojov().getQueueExaminationA().size() + agentZdrojov().getQueueExaminationB().size();
+	}
+
+	public int getFreeDoctors() {
+		return agentZdrojov().getFreeDoctors();
+	}
+
+	public int getFreeNurses() {
+		return agentZdrojov().getFreeNurses();
+	}
+
+	// OPRAVA: Zmenené názvy metód, aby sedeli s AgentZdrojov
+	public int getFreeAmbulancesA() {
+		return agentZdrojov().getFreeAmbulancesA();
+	}
+
+	public int getFreeAmbulancesB() {
+		return agentZdrojov().getFreeAmbulancesB();
+	}
 
 	public Random getGenSeed() {
 		return genSeed;

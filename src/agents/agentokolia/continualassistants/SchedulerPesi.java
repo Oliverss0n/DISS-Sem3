@@ -33,6 +33,7 @@ public class SchedulerPesi extends OSPABA.Scheduler
 		// 2. Vytvoríme entitu pacienta (false = prišiel pešo)
 		Patient newPatient = new Patient(false, mySim().currentTime());
 
+		//System.out.println(">>> DEBUG: Vygenerovaný peší pacient ID: " + newPatient.getId() + " v čase " + mySim().currentTime());
 		// 3. Oznámime manažérovi (AgentOkolia), že niekto prišiel
 		MyMessage noticeMsg = new MyMessage(mySim());
 		noticeMsg.setPatient(newPatient);

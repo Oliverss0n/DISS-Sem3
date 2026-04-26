@@ -38,6 +38,7 @@ public class AgentOkolia extends OSPABA.Agent
 		new ManagerOkolia(Id.managerOkolia, mySim(), this);
 		new SchedulerPesi(Id.schedulerPesi, mySim(), this);
 		new SchedulerSanitka(Id.schedulerSanitka, mySim(), this);
+		addOwnMessage(Mc.novyPacient); //test
 	}
 	//meta! tag="end"
 

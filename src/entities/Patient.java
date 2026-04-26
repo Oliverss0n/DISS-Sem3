@@ -78,4 +78,7 @@ public class Patient {
     public double getEndTimeTreatment() {
         return endTimeTreatment;
     }
+    public static void resetIdCounter() {
+        idCounter = 0;
+    }
 }

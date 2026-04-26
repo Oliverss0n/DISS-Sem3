@@ -8,5 +8,6 @@
     <orderEntry type="jdk" jdkName="openjdk-26" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="ABACore" level="project" />
+    <orderEntry type="library" name="jfreechart-1.5.4" level="project" />
   </component>
 </module>

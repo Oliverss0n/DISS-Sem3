@@ -2,6 +2,7 @@ package agents.agentosetrenia.continualassistants;
 
 import OSPABA.*;
 import agents.agentosetrenia.*;
+import entities.Patient;
 import simulation.*;
 import OSPABA.Process;
 
@@ -23,7 +24,21 @@ public class ProcesOsetrovanie extends OSPABA.Process
 	//meta! sender="AgentOsetrenia", id="88", type="Start"
 	public void processStart(MessageForm message)
 	{
-		hold(1200.0, message);
+		MyMessage msg = (MyMessage) message;
+		Patient pacient = msg.getPatient();
+
+		double duration = 0;
+
+		if (pacient.isAmbulance()) {
+			duration = myAgent().getAmbulanceExamDurationGen().sample();
+		} else {
+			duration = myAgent().getWalkInExamDurationGen().sample();
+		}
+
+		// Tesne pred: message.setCode(Mc.koniecZdrzania);
+		((MySimulation)mySim()).log("OŠETRENIE: Pacient #" + pacient.getId() + " sa začal ošetrovať v ambulancii " + msg.getAmbulanceType() + ". Odhadovaný čas: " + String.format("%.1f", duration * 60) + " s.");
+		message.setCode(Mc.koniecZdrzania);
+		hold(duration * 60.0, message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
@@ -43,6 +58,10 @@ public class ProcesOsetrovanie extends OSPABA.Process
 		case Mc.start:
 			processStart(message);
 		break;
+			// ZACHYTENIE ČISTÉHO KÓDU:
+			case Mc.koniecZdrzania:
+				assistantFinished(message);
+				break;
 
 		default:
 			processDefault(message);

@@ -1,9 +1,11 @@
+import GUI.MainGUI;
 import OSPABA.*;
+
+import javax.swing.*;
 
 
 public class Main {
     public static void main(String[] args) {
-        Agent agent = new Agent(0, null,null);
-        System.out.println("Hello world!");
+        System.out.println("ahoj svet");
     }
 }

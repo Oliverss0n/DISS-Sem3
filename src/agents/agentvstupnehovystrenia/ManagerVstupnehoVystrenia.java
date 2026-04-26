@@ -1,6 +1,7 @@
 package agents.agentvstupnehovystrenia;
 
 import OSPABA.*;
+import entities.Patient;
 import simulation.*;
 
 //meta! id="34"
@@ -34,20 +35,33 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 	//meta! sender="ProcesVstup", id="84", type="Finish"
 	public void processFinish(MessageForm message)
 	{
-		MessageForm vratenieZdrojov = message.createCopy();
-		vratenieZdrojov.setCode(Mc.uvolniZdrojeVstup);
-		vratenieZdrojov.setAddressee(mySim().findAgent(Id.agentZdrojov));
-		notice(vratenieZdrojov);
+		MyMessage msg = (MyMessage) message;
+		Patient patient = msg.getPatient();
+
+		int priority = 0;
+		if (patient.isAmbulance()) {
+			priority = myAgent().getPriorityAmbulanceGen().sample();
+		} else {
+			priority = myAgent().getPriorityWalkInGen().sample();
+		}
+		patient.setPriority(priority);
+
+		// V processFinish(), tesne pod: patient.setPriority(priority);
+		((MySimulation)mySim()).log("VSTUP KONIEC: Pacient #" + patient.getId() + " bol vyšetrený na vstupe. Pridelená priorita: " + priority);
+		MessageForm returnResources = message.createCopy();
+		returnResources.setCode(Mc.uvolniZdrojeVstup);
+		returnResources.setAddressee(myAgent().parent());
+		notice(returnResources);
 
 		message.setCode(Mc.presunNaOsetrenie);
 		message.setAddressee(myAgent().parent());
 		notice(message);
-
 	}
 
 	//meta! sender="AgentUrgentu", id="51", type="Notice"
 	public void processNovyPacient(MessageForm message)
 	{
+		((MySimulation)mySim()).log("4. VSTUP PRIJATÝ | Pacient žiada sestry a ambulanciu.");
 		message.setCode(Mc.reqZdrojeVstup);
 		message.setAddressee(mySim().findAgent(Id.agentUrgentu));
 

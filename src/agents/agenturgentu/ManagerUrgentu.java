@@ -27,6 +27,8 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentBoss", id="50", type="Notice"
 	public void processNovyPacient(MessageForm message)
 	{
+		((MySimulation)mySim()).log("Urgent prijal pacienta od Vchodu. Posielam na chodbu.");
+		((MyMessage)message).setReason(message.code()); // ULOŽÍME REASON
 		message.setAddressee(myAgent().findAssistant(Id.processChodba));
 		startContinualAssistant(message);
 	}
@@ -34,6 +36,7 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentVstupnehoVystrenia", id="56", type="Notice"
 	public void processPresunNaOsetrenie(MessageForm message)
 	{
+		((MyMessage)message).setReason(message.code()); // ULOŽÍME REASON
 		message.setAddressee(myAgent().findAssistant(Id.processChodba));
 		startContinualAssistant(message);
 	}
@@ -41,6 +44,7 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentOsetrenia", id="59", type="Notice"
 	public void processOdchodPacienta(MessageForm message)
 	{
+		((MyMessage)message).setReason(message.code()); // ULOŽÍME REASON
 		message.setAddressee(myAgent().findAssistant(Id.processChodba));
 		startContinualAssistant(message);
 	}
@@ -48,17 +52,31 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="ProcessChodba", id="94", type="Finish"
 	public void processFinish(MessageForm message)
 	{
-		if (message.code() == Mc.novyPacient) {
-			message.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
-			notice(message);
-		}
-		else if (message.code() == Mc.presunNaOsetrenie) {
-			message.setAddressee(mySim().findAgent(Id.agentOsetrenia));
-			notice(message);
-		}
-		else if (message.code() == Mc.odchodPacienta) {
-			message.setAddressee(myAgent().parent());
-			notice(message);
+		MyMessage msg = (MyMessage) message;
+		int id = msg.getPatient().getId();
+		int prio = msg.getPatient().getPriority();
+
+		switch (msg.getReason()) {
+			case Mc.novyPacient:
+				((MySimulation)mySim()).log("CHODBA KONIEC: Pacient #" + id + " dorazil k recepcii.");
+				msg.setCode(Mc.novyPacient);
+				msg.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
+				notice(msg);
+				break;
+
+			case Mc.presunNaOsetrenie:
+				((MySimulation)mySim()).log("CHODBA KONIEC: Pacient #" + id + " (Prio: " + prio + ") dorazil k ambulanciám.");
+				msg.setCode(Mc.presunNaOsetrenie);
+				msg.setAddressee(mySim().findAgent(Id.agentOsetrenia));
+				notice(msg);
+				break;
+
+			case Mc.odchodPacienta:
+				((MySimulation)mySim()).log("ODCHOD: Pacient #" + id + " opustil nemocnicu.");
+				msg.setCode(Mc.odchodPacienta);
+				msg.setAddressee(mySim().findAgent(Id.agentBoss));
+				notice(msg);
+				break;
 		}
 	}
 
@@ -75,7 +93,7 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentZdrojov", id="69", type="Response"
 	public void processReqZdrojeVstupAgentZdrojov(MessageForm message)
 	{
-		// Zo Zdrojov späť na Vstup
+		message.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
 		response(message);
 	}
 
@@ -92,7 +110,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentOsetrenia", id="127", type="Request"
 	public void processReqZdrojeOsetrenieAgentOsetrenia(MessageForm message)
 	{
-		// Z Ošetrenia do Zdrojov
 		message.setAddressee(mySim().findAgent(Id.agentZdrojov));
 		request(message);
 	}
@@ -100,7 +117,7 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="AgentZdrojov", id="110", type="Response"
 	public void processReqZdrojeOsetrenieAgentZdrojov(MessageForm message)
 	{
-		// Zo Zdrojov späť na Ošetrenie
+		message.setAddressee(mySim().findAgent(Id.agentOsetrenia));
 		response(message);
 	}
 

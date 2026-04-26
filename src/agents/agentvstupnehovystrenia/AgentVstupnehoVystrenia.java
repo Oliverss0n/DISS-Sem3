@@ -8,15 +8,33 @@ import simulation.*;
 //meta! id="34"
 public class AgentVstupnehoVystrenia extends OSPABA.Agent
 {
-	private ContinuousEmpiricDist walkInDurationGen;
-	private DiscreteUniformDist ambualanceDurationGen;
+	private ContinuousEmpiricDist walkInEntranceExamDurationGen;
+	private DiscreteUniformDist ambualanceEntranceExamDurationGen;
+
+	private DiscreteEmpiricDist priorityWalkInGen;
+	private DiscreteEmpiricDist priorityAmbulanceGen;
 
 	public AgentVstupnehoVystrenia(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);
 		MySimulation sim = (MySimulation) mySim;
-		this.walkInDurationGen = new ContinuousEmpiricDist(new double[]{0.6, 0.4}, new double[]{5.0, 9.0}, new double[]{3.0, 5.0}, sim.getGenSeed());
-		this.ambualanceDurationGen = new DiscreteUniformDist(4,8, sim.getGenSeed());
+		this.walkInEntranceExamDurationGen = new ContinuousEmpiricDist(new double[]{0.6, 0.4}, new double[]{5.0, 9.0}, new double[]{3.0, 5.0}, sim.getGenSeed());
+		this.ambualanceEntranceExamDurationGen = new DiscreteUniformDist(4,8, sim.getGenSeed());
+
+		this.priorityWalkInGen = new DiscreteEmpiricDist(
+				new double[]{0.1, 0.2, 0.15, 0.25, 0.3},
+				new int[]{2, 3, 4, 5, 6},
+				new int[]{1, 2, 3, 4, 5},
+				sim.getGenSeed()
+		);
+
+		this.priorityAmbulanceGen = new DiscreteEmpiricDist(
+				new double[]{0.3, 0.25, 0.2, 0.15, 0.1},
+				new int[]{2, 3, 4, 5, 6},
+				new int[]{1, 2, 3, 4, 5},
+				sim.getGenSeed()
+		);
+
 		init();
 	}
 
@@ -34,16 +52,25 @@ public class AgentVstupnehoVystrenia extends OSPABA.Agent
 		new ProcesVstup(Id.procesVstup, mySim(), this);
 		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.novyPacient);
+		addOwnMessage(Mc.koniecZdrzania);
 
 	}
 	//meta! tag="end"
 
-	public ContinuousEmpiricDist getWalkInDurationGen() {
-		return walkInDurationGen;
+	public ContinuousEmpiricDist getWalkInEntranceExamDurationGen() {
+		return walkInEntranceExamDurationGen;
 	}
 
-	public DiscreteUniformDist getAmbualanceDurationGen() {
-		return ambualanceDurationGen;
+	public DiscreteUniformDist getAmbualanceEntranceExamDurationGen() {
+		return ambualanceEntranceExamDurationGen;
+	}
+
+	public DiscreteEmpiricDist getPriorityWalkInGen() {
+		return priorityWalkInGen;
+	}
+
+	public DiscreteEmpiricDist getPriorityAmbulanceGen() {
+		return priorityAmbulanceGen;
 	}
 
 }

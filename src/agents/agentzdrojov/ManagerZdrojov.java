@@ -11,14 +11,7 @@ import java.util.Queue;
 public class ManagerZdrojov extends OSPABA.Manager
 {
 
-	private int freeNurses;
-	private int freeDoctors;
-	private int freeAmbulancesA;
-	private int freeAmbulancesB;
 
-	private Queue<MessageForm> queueEntrance;
-	private Queue<MessageForm> queueExaminationA;
-	private Queue<MessageForm> queueExaminationB;
 
 	public ManagerZdrojov(int id, Simulation mySim, Agent myAgent)
 	{
@@ -37,35 +30,27 @@ public class ManagerZdrojov extends OSPABA.Manager
 			petriNet().clear();
 		}
 
-		freeAmbulancesA = 5;
-		freeAmbulancesB = 7;
-
-		this.freeNurses = 5;
-		this.freeDoctors = 5;
-		this.queueEntrance = new LinkedList<>();
-		this.queueExaminationA = new LinkedList<>();
-		this.queueExaminationB = new LinkedList<>();
 	}
 
 	//meta! sender="AgentUrgentu", id="110", type="Request"
 	public void processReqZdrojeOsetrenie(MessageForm message)
 	{
-		// TODO: Tu si neskôr prečítaš prioritu z pacienta vo vnútri správy
-		// MyMessage msg = (MyMessage) message;
-		// int priorita = msg.getPacient().getPriorita();
+		MyMessage msg = (MyMessage) message;
+		int priorita = msg.getPatient().getPriority();
 
-		int priorita = 3; // Zatiaľ na tvrdo pre testovanie, kým nemáme MyMessage
+		// Zaznamenáme čas príchodu do radu pre ošetrenie
+		msg.getPatient().setArrivalTimeQueueTreatment(mySim().currentTime());
 
 		if (priorita == 1 || priorita == 2) {
-			this.queueExaminationA.add(message);
+			myAgent().getQueueExaminationA().add(msg);
 		}
 		else if (priorita == 5) {
-			this.queueExaminationB.add(message);
+			myAgent().getQueueExaminationB().add(msg);
 		}
 		else if (priorita == 3 || priorita == 4) {
 			// Ide do oboch radov!
-			this.queueExaminationA.add(message);
-			this.queueExaminationB.add(message);
+			myAgent().getQueueExaminationA().add(msg);
+			myAgent().getQueueExaminationB().add(msg);
 		}
 
 		checkQueues();
@@ -83,7 +68,11 @@ public class ManagerZdrojov extends OSPABA.Manager
 	//meta! sender="AgentUrgentu", id="64", type="Request"
 	public void processReqZdrojeVstup(MessageForm message)
 	{
-		this.queueEntrance.add(message);
+		MyMessage msg = (MyMessage) message;
+		// Zaznamenáme čas príchodu do radu pre vstupné vyšetrenie
+		msg.getPatient().setArrivalTimeQueueExam(mySim().currentTime());
+
+		myAgent().getQueueEntrance().add(msg);
 		checkQueues();
 	}
 
@@ -91,21 +80,26 @@ public class ManagerZdrojov extends OSPABA.Manager
 	//meta! sender="AgentUrgentu", id="112", type="Notice"
 	public void processUvolniZdrojeVstup(MessageForm message)
 	{
-		this.freeNurses++;
-		this.freeAmbulancesB++;
+		myAgent().setFreeNurses(myAgent().getFreeNurses() + 1);
+		myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() + 1);
 		checkQueues();
 	}
 
 	//meta! sender="AgentUrgentu", id="113", type="Notice"
 	public void processUvolniZdrojeOsetrenie(MessageForm message)
 	{
-		freeNurses++;
-		this.freeNurses++;
+		MyMessage msg = (MyMessage) message;
 
-		// TODO: Tu musíme zistiť, či nám pacient vracia A alebo B
-		// MyMessage msg = (MyMessage) message;
-		// if (msg.getDruhAmbulancie().equals("A")) { this.freeAmbulancesA++; }
-		// else { this.freeAmbulancesB++; }
+		// Vrátime sestru a LEKÁRA (tento predtým chýbal)
+		myAgent().setFreeNurses(myAgent().getFreeNurses() + 1);
+		myAgent().setFreeDoctors(myAgent().getFreeDoctors() + 1);
+
+		// Zistíme, či nám pacient vracia A alebo B
+		if (msg.getAmbulanceType().equals("A")) {
+			myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() + 1);
+		} else {
+			myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() + 1);
+		}
 
 		checkQueues();
 	}
@@ -120,50 +114,56 @@ public class ManagerZdrojov extends OSPABA.Manager
 			changed = false;
 
 			// A) SKONTROLUJEME VSTUP (Potrebuje: Sestra + Ambulancia B)
-			if (this.freeNurses > 0 && this.freeAmbulancesB > 0 && !this.queueEntrance.isEmpty()) {
-				MessageForm msg = this.queueEntrance.poll();
+			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
+				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
 
-				this.freeNurses--;
-				this.freeAmbulancesB--;
+				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
+				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
+				// Ak sa zdroj uvoľnil práve teraz (alebo bol voľný už pri príchode), zaznamenáme okamžitý začiatok
+				// Toto korektne započíta nulovú čakaciu dobu, ak pacient nečakal vôbec.
+				msg.getPatient().setStartTimeExam(mySim().currentTime());
+
+				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
 				response(msg);
 				changed = true;
-				continue; // Začneme cyklus odznova, lebo sa zmenil stav zdrojov
+				continue;
 			}
 
 			// B) SKONTROLUJEME OŠETRENIE A (Potrebuje: Sestra + Lekár + Ambulancia A)
-			if (this.freeNurses > 0 && this.freeDoctors > 0 && this.freeAmbulancesA > 0 && !this.queueExaminationA.isEmpty()) {
-				MessageForm msg = this.queueExaminationA.poll();
+			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty()) {
+				MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
 
 				// BEZPEČNOSTNÁ POISTKA: Ak bol aj v B-čku, vymaž ho odtiaľ!
-				this.queueExaminationB.remove(msg);
+				myAgent().getQueueExaminationB().remove(msg);
 
-				this.freeNurses--;
-				this.freeDoctors--;
-				this.freeAmbulancesA--;
+				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
+				myAgent().setFreeDoctors(myAgent().getFreeDoctors() - 1);
+				myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() - 1);
 
-				// TODO: Zapísať do obálky, že dostal A-čko
-				// ((MyMessage)msg).setDruhAmbulancie("A");
-
+				msg.setAmbulanceType("A");
+				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
+				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
 				response(msg);
 				changed = true;
 				continue;
 			}
 
 			// C) SKONTROLUJEME OŠETRENIE B (Potrebuje: Sestra + Lekár + Ambulancia B)
-			if (this.freeNurses > 0 && this.freeDoctors > 0 && this.freeAmbulancesB > 0 && !this.queueExaminationB.isEmpty()) {
-				MessageForm msg = this.queueExaminationB.poll();
+			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty()) {
+				MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
 
 				// BEZPEČNOSTNÁ POISTKA: Ak bol aj v A-čku, vymaž ho odtiaľ!
-				this.queueExaminationA.remove(msg);
+				myAgent().getQueueExaminationA().remove(msg);
 
-				this.freeNurses--;
-				this.freeDoctors--;
-				this.freeAmbulancesB--;
+				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
+				myAgent().setFreeDoctors(myAgent().getFreeDoctors() - 1);
+				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
-				// TODO: Zapísať do obálky, že dostal B-čko
-				// ((MyMessage)msg).setDruhAmbulancie("B");
+				msg.setAmbulanceType("B");
+				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
 
+				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
 				response(msg);
 				changed = true;
 			}
