@@ -36,6 +36,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JTextArea taLogs;
     private JButton btnClearLogs;
 
+    private DefaultTableModel modelChodba, modelVstup, modelOsetrenie;
+    private JTable tblChodba, tblVstup, tblOsetrenie;
+
     public MainGUI() {
         // Inicializácia jadra
         sim = new MySimulation();
@@ -174,15 +177,37 @@ public class MainGUI extends JFrame implements ISimDelegate {
     }
 
     private JPanel buildTablePanel() {
-        JPanel p = new JPanel(new BorderLayout());
-        p.setBorder(BorderFactory.createTitledBorder("Zoznam aktívnych pacientov"));
+        JPanel mainTablePanel = new JPanel(new GridLayout(1, 3, 5, 5));
 
-        String[] columns = {"ID Pacienta", "Príchod", "Priorita", "Čas v systéme"};
-        tmPatients = new DefaultTableModel(columns, 0);
-        tblPatients = new JTable(tmPatients);
+        // Spoločné stĺpce pre všetky tabuľky
+        String[] columns = {"ID", "Typ", "Prio", "Stav / Čas"};
 
-        p.add(new JScrollPane(tblPatients), BorderLayout.CENTER);
-        return p;
+        // 1. Tabuľka - CHODBA
+        modelChodba = new DefaultTableModel(columns, 0);
+        tblChodba = new JTable(modelChodba);
+        JPanel p1 = new JPanel(new BorderLayout());
+        p1.setBorder(BorderFactory.createTitledBorder("Presuny (Chodba)"));
+        p1.add(new JScrollPane(tblChodba), BorderLayout.CENTER);
+
+        // 2. Tabuľka - VSTUP
+        modelVstup = new DefaultTableModel(columns, 0);
+        tblVstup = new JTable(modelVstup);
+        JPanel p2 = new JPanel(new BorderLayout());
+        p2.setBorder(BorderFactory.createTitledBorder("Vstupné vyšetrenie"));
+        p2.add(new JScrollPane(tblVstup), BorderLayout.CENTER);
+
+        // 3. Tabuľka - OŠETROVANIE
+        modelOsetrenie = new DefaultTableModel(columns, 0);
+        tblOsetrenie = new JTable(modelOsetrenie);
+        JPanel p3 = new JPanel(new BorderLayout());
+        p3.setBorder(BorderFactory.createTitledBorder("Ambulancie A / B"));
+        p3.add(new JScrollPane(tblOsetrenie), BorderLayout.CENTER);
+
+        mainTablePanel.add(p1);
+        mainTablePanel.add(p2);
+        mainTablePanel.add(p3);
+
+        return mainTablePanel;
     }
 
     private JPanel buildLogPanel() {
@@ -302,28 +327,63 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     @Override
     public void refresh(Simulation smltn) {
-        lblSimTime.setText(String.format(" Čas: %.2f s", sim.currentTime()));
+        // Ak nie je vizuálny režim, šetríme výkon a končíme
+        if (!cbVisualMode.isSelected()) return;
 
-        lblCurQueueEntrance.setText("Rad na vstup: " + sim.getQueueEntranceSize());
-        lblCurQueueExam.setText("Rad na ošetrenie: " + sim.getQueueExamSize());
-        lblCurFreeDoctors.setText("Voľní lekári: " + sim.getFreeDoctors());
-        lblCurFreeNurses.setText("Voľné sestry: " + sim.getFreeNurses());
+        // Výpočet pekného času
+        double totalSeconds = smltn.currentTime();
+        long days = (long) totalSeconds / 86400;
+        long hours = (long) (totalSeconds % 86400) / 3600;
+        long minutes = (long) (totalSeconds % 3600) / 60;
+        long seconds = (long) totalSeconds % 60;
 
-        // Aktualizácia tabuľky
-        List<Patient> patients = sim.getActivePatients();
-        tmPatients.setRowCount(0); // Vymaže staré riadky
-        for (Patient p : patients) {
-            String priorita = p.getPriority() == -1 ? "Čaká" : String.valueOf(p.getPriority());
-            String prichod = p.isAmbulance() ? "Sanitka" : "Pešo";
-            double stravenyCas = sim.currentTime() - p.getArrivalTimeBuilding();
+        // Aktualizácia GUI musí bežať v SwingUtilities vlákne
+        SwingUtilities.invokeLater(() -> {
+            lblSimTime.setText(String.format(" Čas: Deň %d | %02d:%02d:%02d", days + 1, hours, minutes, seconds));
 
-            tmPatients.addRow(new Object[]{
-                    "#" + p.getId(),
-                    prichod,
-                    priorita,
-                    String.format("%.1f s", stravenyCas)
-            });
-        }
+            lblCurQueueEntrance.setText("Rad na vstup: " + sim.getQueueEntranceSize());
+            lblCurQueueExam.setText("Rad na ošetrenie: " + sim.getQueueExamSize());
+            lblCurFreeDoctors.setText("Voľní lekári: " + sim.getFreeDoctors());
+            lblCurFreeNurses.setText("Voľné sestry: " + sim.getFreeNurses());
+
+            // Vymažeme staré dáta z tabuliek
+            modelChodba.setRowCount(0);
+            modelVstup.setRowCount(0);
+            modelOsetrenie.setRowCount(0);
+
+            // Získame zoznam len RAZ
+            List<Patient> patients = ((MySimulation)smltn).getActivePatients();
+
+            // DEBUG výpis (voliteľné)
+            // System.out.println("DEBUG: V zozname je " + patients.size() + " pacientov.");
+
+            // KRITICKÁ ČASŤ: Zamkneme zoznam (ArrayList), kým ho prechádzame slučkou
+            synchronized (patients) {
+                for (Patient p : patients) {
+                    String prio = p.getPriority() == -1 ? "-" : String.valueOf(p.getPriority());
+                    String typ = p.isAmbulance() ? "Sanitka" : "Pešo";
+                    String stav = p.getStav();
+
+                    Object[] rowData = new Object[]{
+                            "#" + p.getId(),
+                            typ,
+                            prio,
+                            stav
+                    };
+
+                    // Rozdelenie do tabuliek
+                    if (stav.contains("Kráča")) {
+                        modelChodba.addRow(rowData);
+                    }
+                    else if (stav.contains("Vstup") || stav.contains("recepcii")) {
+                        modelVstup.addRow(rowData);
+                    }
+                    else if (stav.contains("Amb") || stav.contains("Ošetrenie")) {
+                        modelOsetrenie.addRow(rowData);
+                    }
+                }
+            } // Koniec zámku
+        });
     }
 
     // ==========================================

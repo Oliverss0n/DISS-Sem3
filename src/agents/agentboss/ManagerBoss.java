@@ -58,12 +58,12 @@ public class ManagerBoss extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.novyPacient:
-			processNovyPacient(message);
-		break;
-
 		case Mc.odchodPacienta:
 			processOdchodPacienta(message);
+		break;
+
+		case Mc.novyPacient:
+			processNovyPacient(message);
 		break;
 
 		default:

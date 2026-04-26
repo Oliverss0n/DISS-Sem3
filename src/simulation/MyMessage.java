@@ -9,13 +9,13 @@ public class MyMessage extends OSPABA.MessageForm
 	private Patient patient;
 	private String ambulanceType;
 
-	private int reason;//????
+	//private int reason;//????
 
 	public MyMessage(Simulation mySim)
 	{
 		super(mySim);
 		this.ambulanceType = "";
-		this.reason = -1;//??
+		//this.reason = -1;//??
 	}
 
 	public MyMessage(MyMessage original)
@@ -38,7 +38,7 @@ public class MyMessage extends OSPABA.MessageForm
 		MyMessage original = (MyMessage)message;
 		this.patient = original.getPatient();
 		this.ambulanceType = original.getAmbulanceType();
-		this.reason = original.getReason();
+		//this.reason = original.getReason();
 	}
 
 	public Patient getPatient() {
@@ -55,9 +55,8 @@ public class MyMessage extends OSPABA.MessageForm
 		this.ambulanceType = ambulanceType;
 	}
 
-	// Pridaj getter a setter:
-	public int getReason() { return reason; }
-	public void setReason(int reason) { this.reason = reason; }
+	//public int getReason() { return reason; }
+	//public void setReason(int reason) { this.reason = reason; }
 
 
 }

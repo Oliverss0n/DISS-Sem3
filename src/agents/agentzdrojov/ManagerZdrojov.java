@@ -38,8 +38,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 		MyMessage msg = (MyMessage) message;
 		int priorita = msg.getPatient().getPriority();
 
-		// Zaznamenáme čas príchodu do radu pre ošetrenie
 		msg.getPatient().setArrivalTimeQueueTreatment(mySim().currentTime());
+
+		// TOTO SME PRIDALI PRE GUI:
+		msg.getPatient().setStav("Čaká v rade na Ošetrenie");
 
 		if (priorita == 1 || priorita == 2) {
 			myAgent().getQueueExaminationA().add(msg);
@@ -48,7 +50,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 			myAgent().getQueueExaminationB().add(msg);
 		}
 		else if (priorita == 3 || priorita == 4) {
-			// Ide do oboch radov!
 			myAgent().getQueueExaminationA().add(msg);
 			myAgent().getQueueExaminationB().add(msg);
 		}
@@ -69,8 +70,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 	public void processReqZdrojeVstup(MessageForm message)
 	{
 		MyMessage msg = (MyMessage) message;
-		// Zaznamenáme čas príchodu do radu pre vstupné vyšetrenie
 		msg.getPatient().setArrivalTimeQueueExam(mySim().currentTime());
+
+		// TOTO SME PRIDALI PRE GUI:
+		msg.getPatient().setStav("Čaká v rade na Vstup");
 
 		myAgent().getQueueEntrance().add(msg);
 		checkQueues();
@@ -109,20 +112,20 @@ public class ManagerZdrojov extends OSPABA.Manager
 	private void checkQueues() {
 		boolean changed = true;
 
-		// Cyklus beží, kým sa niekto úspešne nepridelí k zdroju
 		while (changed) {
 			changed = false;
 
-			// A) SKONTROLUJEME VSTUP (Potrebuje: Sestra + Ambulancia B)
+			// A) SKONTROLUJEME VSTUP
 			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
 
 				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
 				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
-				// Ak sa zdroj uvoľnil práve teraz (alebo bol voľný už pri príchode), zaznamenáme okamžitý začiatok
-				// Toto korektne započíta nulovú čakaciu dobu, ak pacient nečakal vôbec.
 				msg.getPatient().setStartTimeExam(mySim().currentTime());
+
+				// TOTO SME PRIDALI PRE GUI:
+				msg.getPatient().setStav("Vyšetruje sa na Vstupe");
 
 				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
 				response(msg);
@@ -130,11 +133,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 				continue;
 			}
 
-			// B) SKONTROLUJEME OŠETRENIE A (Potrebuje: Sestra + Lekár + Ambulancia A)
+			// B) SKONTROLUJEME OŠETRENIE A
 			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
 
-				// BEZPEČNOSTNÁ POISTKA: Ak bol aj v B-čku, vymaž ho odtiaľ!
 				myAgent().getQueueExaminationB().remove(msg);
 
 				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
@@ -143,17 +145,20 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 				msg.setAmbulanceType("A");
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
+
+				// TOTO SME PRIDALI PRE GUI:
+				msg.getPatient().setStav("Ošetruje sa v Amb. A");
+
 				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
 				response(msg);
 				changed = true;
 				continue;
 			}
 
-			// C) SKONTROLUJEME OŠETRENIE B (Potrebuje: Sestra + Lekár + Ambulancia B)
+			// C) SKONTROLUJEME OŠETRENIE B
 			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
 
-				// BEZPEČNOSTNÁ POISTKA: Ak bol aj v A-čku, vymaž ho odtiaľ!
 				myAgent().getQueueExaminationA().remove(msg);
 
 				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
@@ -162,6 +167,9 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 				msg.setAmbulanceType("B");
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
+
+				// TOTO SME PRIDALI PRE GUI:
+				msg.getPatient().setStav("Ošetruje sa v Amb. B");
 
 				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
 				response(msg);
@@ -181,20 +189,20 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.uvolniZdrojeVstup:
-			processUvolniZdrojeVstup(message);
-		break;
-
-		case Mc.uvolniZdrojeOsetrenie:
-			processUvolniZdrojeOsetrenie(message);
-		break;
-
 		case Mc.reqZdrojeOsetrenie:
 			processReqZdrojeOsetrenie(message);
 		break;
 
+		case Mc.uvolniZdrojeVstup:
+			processUvolniZdrojeVstup(message);
+		break;
+
 		case Mc.reqZdrojeVstup:
 			processReqZdrojeVstup(message);
+		break;
+
+		case Mc.uvolniZdrojeOsetrenie:
+			processUvolniZdrojeOsetrenie(message);
 		break;
 
 		default:

@@ -1,10 +1,10 @@
 package agents.agentosetrenia;
 
-import Distributions.ContinuousEmpiricDist;
-import Distributions.ContinuousUniformDist;
 import OSPABA.*;
 import agents.agentosetrenia.continualassistants.*;
 import simulation.*;
+import Distributions.ContinuousEmpiricDist;
+import Distributions.ContinuousUniformDist;
 
 //meta! id="37"
 public class AgentOsetrenia extends OSPABA.Agent

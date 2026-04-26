@@ -58,11 +58,10 @@ public class ProcesOsetrovanie extends OSPABA.Process
 		case Mc.start:
 			processStart(message);
 		break;
-			// ZACHYTENIE ČISTÉHO KÓDU:
-			case Mc.koniecZdrzania:
-				assistantFinished(message);
-				break;
 
+		case Mc.koniecZdrzania:
+			assistantFinished(message);
+		break;
 		default:
 			processDefault(message);
 		break;

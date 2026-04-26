@@ -1,11 +1,11 @@
 package agents.agentokolia;
 
-import Distributions.ErlangDist;
-import Distributions.ExponentialDist;
 import OSPABA.*;
-import OSPRNG.ErlangRNG;
 import simulation.*;
 import agents.agentokolia.continualassistants.*;
+import Distributions.ErlangDist;
+import Distributions.ExponentialDist;
+import OSPRNG.ErlangRNG;
 
 //meta! id="5"
 public class AgentOkolia extends OSPABA.Agent
@@ -38,7 +38,7 @@ public class AgentOkolia extends OSPABA.Agent
 		new ManagerOkolia(Id.managerOkolia, mySim(), this);
 		new SchedulerPesi(Id.schedulerPesi, mySim(), this);
 		new SchedulerSanitka(Id.schedulerSanitka, mySim(), this);
-		addOwnMessage(Mc.novyPacient); //test
+		addOwnMessage(Mc.novyPacient);
 	}
 	//meta! tag="end"
 

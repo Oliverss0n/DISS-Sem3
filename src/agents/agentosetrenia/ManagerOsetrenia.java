@@ -72,16 +72,16 @@ public class ManagerOsetrenia extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
+		case Mc.reqZdrojeOsetrenie:
+			processReqZdrojeOsetrenie(message);
+		break;
+
 		case Mc.finish:
 			processFinish(message);
 		break;
 
 		case Mc.presunNaOsetrenie:
 			processPresunNaOsetrenie(message);
-		break;
-
-		case Mc.reqZdrojeOsetrenie:
-			processReqZdrojeOsetrenie(message);
 		break;
 
 		default:

@@ -1,14 +1,15 @@
-package agents.agentvstupnehovystrenia.continualassistants;
+package agents.agenturgentu.continualassistants;
 
 import OSPABA.*;
 import entities.Patient;
 import simulation.*;
-import agents.agentvstupnehovystrenia.*;
+import agents.agenturgentu.*;
+import OSPABA.Process;
 
-//meta! id="83"
-public class ProcesVstup extends OSPABA.Process
+//meta! id="138"
+public class ProcessPresunOsetrenie extends OSPABA.Process
 {
-	public ProcesVstup(int id, Simulation mySim, CommonAgent myAgent)
+	public ProcessPresunOsetrenie(int id, Simulation mySim, CommonAgent myAgent)
 	{
 		super(id, mySim, myAgent);
 	}
@@ -20,22 +21,16 @@ public class ProcesVstup extends OSPABA.Process
 		// Setup component for the next replication
 	}
 
-	//meta! sender="AgentVstupnehoVystrenia", id="84", type="Start"
+	//meta! sender="AgentUrgentu", id="139", type="Start"
 	public void processStart(MessageForm message)
 	{
 		MyMessage msg = (MyMessage) message;
-
 		Patient patient = msg.getPatient();
-		double duration = 0;
-
-		if (patient.isAmbulance()) {
-			duration = myAgent().getAmbualanceEntranceExamDurationGen().sample();
-		} else {
-			duration = myAgent().getWalkInEntranceExamDurationGen().sample();
-		}
-
+		patient.setStav("Kráča k ambulanciám");
+		double travelTime = myAgent().getMoveBetweenAmbulancesGen().sample();
+		((MySimulation)mySim()).log("CHODBA OŠETRENIE: Pacient #" + patient.getId() + " sa presúva k ambulancii. Čas: " + String.format("%.1f", travelTime) + " s.");
 		message.setCode(Mc.koniecZdrzania);
-		hold(duration * 60.0, message); //v zadani v minutach
+		hold(travelTime, message);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"
@@ -55,8 +50,10 @@ public class ProcesVstup extends OSPABA.Process
 		case Mc.start:
 			processStart(message);
 		break;
+		case Mc.koniecZdrzania:
+			assistantFinished(message);
+		break;
 
-			case Mc.koniecZdrzania: assistantFinished(message); break;
 		default:
 			processDefault(message);
 		break;
@@ -65,9 +62,9 @@ public class ProcesVstup extends OSPABA.Process
 	//meta! tag="end"
 
 	@Override
-	public AgentVstupnehoVystrenia myAgent()
+	public AgentUrgentu myAgent()
 	{
-		return (AgentVstupnehoVystrenia)super.myAgent();
+		return (AgentUrgentu)super.myAgent();
 	}
 
 }

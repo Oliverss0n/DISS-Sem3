@@ -1,9 +1,9 @@
 package agents.agentvstupnehovystrenia;
 
-import Distributions.*;
 import OSPABA.*;
 import agents.agentvstupnehovystrenia.continualassistants.*;
 import simulation.*;
+import Distributions.*;
 
 //meta! id="34"
 public class AgentVstupnehoVystrenia extends OSPABA.Agent
@@ -53,7 +53,6 @@ public class AgentVstupnehoVystrenia extends OSPABA.Agent
 		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.novyPacient);
 		addOwnMessage(Mc.koniecZdrzania);
-
 	}
 	//meta! tag="end"
 

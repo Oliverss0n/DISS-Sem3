@@ -23,9 +23,8 @@ public class AgentBoss extends OSPABA.Agent
 	private void init()
 	{
 		new ManagerBoss(Id.managerBoss, mySim(), this);
-		addOwnMessage(Mc.novyPacient);
 		addOwnMessage(Mc.odchodPacienta);
-		addOwnMessage(Mc.novyPacient);//test
+		addOwnMessage(Mc.novyPacient);
 	}
 	//meta! tag="end"
 }

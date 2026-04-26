@@ -1,9 +1,8 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
-import OSPDataStruct.SimQueue;
 import simulation.*;
-
+import OSPDataStruct.SimQueue;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -55,8 +54,8 @@ public class AgentZdrojov extends OSPABA.Agent
 		new ManagerZdrojov(Id.managerZdrojov, mySim(), this);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
 		addOwnMessage(Mc.uvolniZdrojeVstup);
-		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 		addOwnMessage(Mc.reqZdrojeVstup);
+		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 	}
 	//meta! tag="end"
 

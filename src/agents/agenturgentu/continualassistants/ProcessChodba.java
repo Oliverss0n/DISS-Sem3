@@ -1,4 +1,4 @@
-package agents.agenturgentu.continualassistants;
+/*package agents.agenturgentu.continualassistants;
 
 import OSPABA.*;
 import entities.Patient;
@@ -93,4 +93,4 @@ public class ProcessChodba extends OSPABA.Process
 		return (AgentUrgentu)super.myAgent();
 	}
 
-}
+}*/

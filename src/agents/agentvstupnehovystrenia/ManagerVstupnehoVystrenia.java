@@ -91,16 +91,16 @@ public class ManagerVstupnehoVystrenia extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
+		case Mc.finish:
+			processFinish(message);
+		break;
+
 		case Mc.reqZdrojeVstup:
 			processReqZdrojeVstup(message);
 		break;
 
 		case Mc.novyPacient:
 			processNovyPacient(message);
-		break;
-
-		case Mc.finish:
-			processFinish(message);
 		break;
 
 		default:

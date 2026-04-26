@@ -5,6 +5,7 @@ package entities;
  */
 public class Patient {
     private static int idCounter = 0;
+    private String stav = "Kráča k recepcii";
 
     private final int id;
     private final boolean isAmbulance;
@@ -80,5 +81,13 @@ public class Patient {
     }
     public static void resetIdCounter() {
         idCounter = 0;
+    }
+
+    public String getStav() {
+        return stav;
+    }
+
+    public void setStav(String stav) {
+        this.stav = stav;
     }
 }

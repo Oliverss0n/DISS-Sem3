@@ -8,7 +8,6 @@ import agents.agentboss.*;
 import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
 import entities.Patient;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -17,7 +16,7 @@ import java.util.function.Consumer;
 
 public class MySimulation extends OSPABA.Simulation
 {
-	protected Random genSeed;
+	protected Random genSeed = new Random();
 	private int numDoctors=5;
 	private int numNurses=5;
 
@@ -82,7 +81,6 @@ public class MySimulation extends OSPABA.Simulation
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	private void init()
 	{
-		this.genSeed = new Random();
 		setAgentBoss(new AgentBoss(Id.agentBoss, this, null));
 		setAgentOkolia(new AgentOkolia(Id.agentOkolia, this, agentBoss()));
 		setAgentUrgentu(new AgentUrgentu(Id.agentUrgentu, this, agentBoss()));

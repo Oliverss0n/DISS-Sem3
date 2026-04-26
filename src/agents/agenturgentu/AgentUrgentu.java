@@ -1,9 +1,9 @@
 package agents.agenturgentu;
 
-import Distributions.*;
 import OSPABA.*;
 import simulation.*;
 import agents.agenturgentu.continualassistants.*;
+import Distributions.*;
 
 //meta! id="30"
 public class AgentUrgentu extends OSPABA.Agent
@@ -38,7 +38,9 @@ public class AgentUrgentu extends OSPABA.Agent
 	private void init()
 	{
 		new ManagerUrgentu(Id.managerUrgentu, mySim(), this);
-		new ProcessChodba(Id.processChodba, mySim(), this);
+		new ProcessPresunOdchod(Id.processPresunOdchod, mySim(), this);
+		new ProcessPresunVstup(Id.processPresunVstup, mySim(), this);
+		new ProcessPresunOsetrenie(Id.processPresunOsetrenie, mySim(), this);
 		addOwnMessage(Mc.presunNaOsetrenie);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
 		addOwnMessage(Mc.uvolniZdrojeVstup);
