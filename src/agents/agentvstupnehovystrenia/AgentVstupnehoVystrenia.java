@@ -18,7 +18,12 @@ public class AgentVstupnehoVystrenia extends OSPABA.Agent
 	{
 		super(id, mySim, parent);
 		MySimulation sim = (MySimulation) mySim;
-		this.walkInEntranceExamDurationGen = new ContinuousEmpiricDist(new double[]{0.6, 0.4}, new double[]{5.0, 9.0}, new double[]{3.0, 5.0}, sim.getGenSeed());
+		this.walkInEntranceExamDurationGen = new ContinuousEmpiricDist(
+				new double[]{0.6, 0.4},
+				new double[]{5.0, 9.0},
+				new double[]{3.0, 5.0},
+				sim.getGenSeed());
+
 		this.ambualanceEntranceExamDurationGen = new DiscreteUniformDist(4,8, sim.getGenSeed());
 
 		this.priorityWalkInGen = new DiscreteEmpiricDist(

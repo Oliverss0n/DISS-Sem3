@@ -28,25 +28,21 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 	//meta! sender="AgentOkolia", id="10", type="Start"
 	public void processStart(MessageForm message)
 	{
-		// 1. Vygenerujeme čas do ďalšieho príchodu
-		double arrivalTime = myAgent().getAmbulanceArrivals().sample();
 
-		// 2. Vytvoríme pacienta (ale pozor, pacient prišiel PRÁVE TERAZ)
+		MessageForm copy = message.createCopy();
+		MySimulation sim = (MySimulation) mySim();
+		double arrivalTime = myAgent().getAmbulanceArrivals().sample();
 		Patient newPatient = new Patient(true, mySim().currentTime());
 
-		((MySimulation)mySim()).addPatient(newPatient);
+		sim.addPatient(newPatient);
 
-		//System.out.println(">>> DEBUG: Vygenerovaný SANITAK pacient ID: " + newPatient.getId() + " v čase " + mySim().currentTime());
-		// 3. Pošleme pacienta šéfovi cez Notice (správne z hľadiska teórie)
 		MyMessage noticeMsg = new MyMessage(mySim());
 		noticeMsg.setPatient(newPatient);
 		noticeMsg.setCode(Mc.novyPacient);
 		noticeMsg.setAddressee(myAgent());
 		notice(noticeMsg);
 
-		// 4. Pošleme kópiu štartovacej správy do budúcnosti.
-		// Keďže sme jej nezmenili kód, vráti sa ako Mc.start a spustí túto metódu odznova!
-		MessageForm copy = message.createCopy();
+
 		hold(arrivalTime, copy);
 	}
 

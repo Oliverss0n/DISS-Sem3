@@ -34,10 +34,10 @@ public class ManagerBoss extends OSPABA.Manager
 	//meta! sender="AgentUrgentu", id="61", type="Notice"
 	public void processOdchodPacienta(MessageForm message)
 	{
-		//DOPLNIT STATISTIKY A DALSIE ZALEZITOSTI
 		MyMessage msg = (MyMessage) message;
-		// Odstránime pacienta zo zoznamu v simulácii, aby zmizol z GUI tabuľky
-		((MySimulation)mySim()).removePatient(msg.getPatient());
+		MySimulation sim = (MySimulation) mySim();
+
+		sim.removePatient(msg.getPatient());
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

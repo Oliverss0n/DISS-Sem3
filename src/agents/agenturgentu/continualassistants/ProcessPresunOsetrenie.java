@@ -4,7 +4,6 @@ import OSPABA.*;
 import entities.Patient;
 import simulation.*;
 import agents.agenturgentu.*;
-import OSPABA.Process;
 
 //meta! id="138"
 public class ProcessPresunOsetrenie extends OSPABA.Process
@@ -24,11 +23,13 @@ public class ProcessPresunOsetrenie extends OSPABA.Process
 	//meta! sender="AgentUrgentu", id="139", type="Start"
 	public void processStart(MessageForm message)
 	{
+		MySimulation sim = (MySimulation) mySim();
 		MyMessage msg = (MyMessage) message;
 		Patient patient = msg.getPatient();
 		patient.setStav("Kráča k ambulanciám");
 		double travelTime = myAgent().getMoveBetweenAmbulancesGen().sample();
-		((MySimulation)mySim()).log("CHODBA OŠETRENIE: Pacient #" + patient.getId() + " sa presúva k ambulancii. Čas: " + String.format("%.1f", travelTime) + " s.");
+
+		sim.log("CHODBA OŠETRENIE: Pacient #" + patient.getId() + " sa presúva k ambulancii. Čas: " + String.format("%.1f", travelTime) + " s.");
 		message.setCode(Mc.koniecZdrzania);
 		hold(travelTime, message);
 	}

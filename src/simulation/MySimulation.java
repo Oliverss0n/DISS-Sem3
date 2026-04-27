@@ -20,7 +20,7 @@ public class MySimulation extends OSPABA.Simulation
 	private int numNurses;
 
 	//private List<Patient> activePatients = new LinkedList<>();
-	private List<Patient> activePatients = Collections.synchronizedList(new ArrayList<>());
+	private List<Patient> activePatients = new ArrayList<>();
 	private boolean logEnabled = false; // Príznak vizuálneho režimu
 	private Consumer<String> logger;
 
@@ -60,7 +60,6 @@ public class MySimulation extends OSPABA.Simulation
 		super.prepareReplication();
 		activePatients.clear();
 
-		// Vynulujeme IDčka pacientov od 0
 		Patient.resetIdCounter();
 		// Reset entities, queues, local statistics, etc...
 	}
@@ -169,12 +168,11 @@ public AgentZdrojov agentZdrojov()
 		this.numNurses = numNurses;
 	}
 
-	// OPRAVA: Voláme .size() na fronte, ktorú nám vráti AgentZdrojov
+
 	public int getQueueEntranceSize() {
 		return agentZdrojov().getQueueEntrance().size();
 	}
 
-	// OPRAVA: Keďže teraz máme dva fronty na ošetrenie, pre GUI ich môžeme sčítať (alebo urobiť dve samostatné metódy, ak to chceš v GUI vidieť oddelene)
 	public int getQueueExamSize() {
 		return agentZdrojov().getQueueExaminationA().size() + agentZdrojov().getQueueExaminationB().size();
 	}
@@ -187,7 +185,6 @@ public AgentZdrojov agentZdrojov()
 		return agentZdrojov().getFreeNurses();
 	}
 
-	// OPRAVA: Zmenené názvy metód, aby sedeli s AgentZdrojov
 	public int getFreeAmbulancesA() {
 		return agentZdrojov().getFreeAmbulancesA();
 	}

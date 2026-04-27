@@ -1,6 +1,5 @@
-package Statistics;
+/*package Statistics;
 
-import Core.EventCore;
 public class TimeStat {
 
     //dostane referenciu na vseobecne simulacny jadro
@@ -79,3 +78,4 @@ public class TimeStat {
 
 
 }
+*/

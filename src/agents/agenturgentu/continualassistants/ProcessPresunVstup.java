@@ -4,7 +4,6 @@ import OSPABA.*;
 import entities.Patient;
 import simulation.*;
 import agents.agenturgentu.*;
-import OSPABA.Process;
 
 //meta! id="134"
 public class ProcessPresunVstup extends OSPABA.Process
@@ -25,15 +24,16 @@ public class ProcessPresunVstup extends OSPABA.Process
 	public void processStart(MessageForm message) {
 		MyMessage msg = (MyMessage) message;
 		Patient patient = msg.getPatient();
+		MySimulation sim = (MySimulation) mySim();
+
 		patient.setStav("Kráča k recepcii");
 
-
-		// Žiadny IF, sme vo Vstupe, takže generujeme len čas pre Vstup
 		double travelTime = patient.isAmbulance()
 				? myAgent().getMoveEntranceAmbulanceGen().sample()
 				: myAgent().getMoveEntranceWalkInGen().sample();
 
-		((MySimulation)mySim()).log("CHODBA VSTUP: Pacient #" + patient.getId() + " sa presúva na vstup. Čas: " + String.format("%.1f", travelTime) + " s.");
+
+		sim.log("CHODBA VSTUP: Pacient #" + patient.getId() + " sa presúva na vstup. Čas: " + String.format("%.1f", travelTime) + " s.");
 
 		message.setCode(Mc.koniecZdrzania);
 		hold(travelTime, message);

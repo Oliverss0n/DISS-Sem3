@@ -111,6 +111,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 	// --- 6. SRDCE ROZDEĽOVANIA (TVOJA METÓDA) ---
 	private void checkQueues() {
 		boolean changed = true;
+		MySimulation sim = (MySimulation) mySim();
 
 		while (changed) {
 			changed = false;
@@ -127,7 +128,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 				// TOTO SME PRIDALI PRE GUI:
 				msg.getPatient().setStav("Vyšetruje sa na Vstupe");
 
-				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
 				response(msg);
 				changed = true;
 				continue;
@@ -149,7 +150,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 				// TOTO SME PRIDALI PRE GUI:
 				msg.getPatient().setStav("Ošetruje sa v Amb. A");
 
-				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
 				response(msg);
 				changed = true;
 				continue;
@@ -171,7 +172,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 				// TOTO SME PRIDALI PRE GUI:
 				msg.getPatient().setStav("Ošetruje sa v Amb. B");
 
-				((MySimulation)mySim()).log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
 				response(msg);
 				changed = true;
 			}

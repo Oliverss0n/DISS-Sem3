@@ -4,7 +4,6 @@ import OSPABA.*;
 import entities.Patient;
 import simulation.*;
 import agents.agenturgentu.*;
-import OSPABA.Process;
 
 //meta! id="136"
 public class ProcessPresunOdchod extends OSPABA.Process
@@ -24,19 +23,15 @@ public class ProcessPresunOdchod extends OSPABA.Process
 	//meta! sender="AgentUrgentu", id="137", type="Start"
 	public void processStart(MessageForm message)
 	{
-		// 1. Pretypujeme správu na MyMessage
+		MySimulation sim = (MySimulation) mySim();
 		MyMessage msg = (MyMessage) message;
 
-		// 2. Vytiahneme pacienta zo správy (teraz už premenná 'patient' bude existovať)
 		Patient patient = msg.getPatient();
 		patient.setStav("Kráča k východu");
-		// 3. Získame čas presunu
 		double travelTime = myAgent().getMoveExitGen().sample();
 
-		// 4. Teraz už logovanie bude fungovať
-		((MySimulation)mySim()).log("🚶 CHODBA ODCHOD: Pacient #" + patient.getId() + " kráča k východu. Čas: " + String.format("%.1f", travelTime) + " s.");
+		sim.log("CHODBA ODCHOD: Pacient #" + patient.getId() + " kráča k východu. Čas: " + String.format("%.1f", travelTime) + " s.");
 
-		// 5. Nastavíme kód pre návrat a podržíme správu
 		message.setCode(Mc.koniecZdrzania);
 		hold(travelTime, message);
 	}

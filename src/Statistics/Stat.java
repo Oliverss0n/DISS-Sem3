@@ -1,4 +1,4 @@
-package Statistics;
+/*package Statistics;
 
 public class Stat {
 
@@ -65,4 +65,4 @@ public class Stat {
     public double getConfidenceIntervalUpper() {
         return getMean() + getConfidenceIntervalHalfWidth();
     }
-}
+}*/

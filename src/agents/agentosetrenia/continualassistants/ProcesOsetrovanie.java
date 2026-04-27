@@ -4,7 +4,6 @@ import OSPABA.*;
 import agents.agentosetrenia.*;
 import entities.Patient;
 import simulation.*;
-import OSPABA.Process;
 
 //meta! id="87"
 public class ProcesOsetrovanie extends OSPABA.Process
@@ -24,6 +23,7 @@ public class ProcesOsetrovanie extends OSPABA.Process
 	//meta! sender="AgentOsetrenia", id="88", type="Start"
 	public void processStart(MessageForm message)
 	{
+		MySimulation sim = (MySimulation) mySim();
 		MyMessage msg = (MyMessage) message;
 		Patient pacient = msg.getPatient();
 
@@ -35,8 +35,7 @@ public class ProcesOsetrovanie extends OSPABA.Process
 			duration = myAgent().getWalkInExamDurationGen().sample();
 		}
 
-		// Tesne pred: message.setCode(Mc.koniecZdrzania);
-		((MySimulation)mySim()).log("OŠETRENIE: Pacient #" + pacient.getId() + " sa začal ošetrovať v ambulancii " + msg.getAmbulanceType() + ". Odhadovaný čas: " + String.format("%.1f", duration * 60) + " s.");
+		sim.log("OŠETRENIE: Pacient #" + pacient.getId() + " sa začal ošetrovať v ambulancii " + msg.getAmbulanceType() + ". Odhadovaný čas: " + String.format("%.1f", duration * 60) + " s.");
 		message.setCode(Mc.koniecZdrzania);
 		hold(duration * 60.0, message);
 	}

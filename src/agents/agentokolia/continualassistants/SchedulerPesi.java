@@ -27,26 +27,22 @@ public class SchedulerPesi extends OSPABA.Scheduler
 	//meta! sender="AgentOkolia", id="8", type="Start"
 	public void processStart(MessageForm message)
 	{
-		// 1. Vygenerujeme čas, kedy príde ďalší peší pacient
-		double arrivalTime = myAgent().getWalkArrivals().sample(); // [cite: 308, 411]
+		MessageForm copy = message.createCopy();
 
-		// 2. Vytvoríme entitu pacienta (false = prišiel pešo)
+		double arrivalTime = myAgent().getWalkArrivals().sample();
 		Patient newPatient = new Patient(false, mySim().currentTime());
 
-		((MySimulation)mySim()).addPatient(newPatient);
+		MySimulation sim = (MySimulation) mySim();
+		sim.addPatient(newPatient);
 
-		//System.out.println(">>> DEBUG: Vygenerovaný peší pacient ID: " + newPatient.getId() + " v čase " + mySim().currentTime());
-		// 3. Oznámime manažérovi (AgentOkolia), že niekto prišiel
 		MyMessage noticeMsg = new MyMessage(mySim());
 		noticeMsg.setPatient(newPatient);
 		noticeMsg.setCode(Mc.novyPacient);
 		noticeMsg.setAddressee(myAgent());
-		notice(noticeMsg); //
+		notice(noticeMsg);
 
-		// 4. Urobíme kópiu štartovacej správy a pošleme ju do "budúcnosti"
-		// Keďže jej nemeníme kód, vráti sa ako Mc.start a znova spustí túto metódu
-		MessageForm copy = message.createCopy();
-		hold(arrivalTime, copy); // [cite: 320]
+
+		hold(arrivalTime, copy);
 	}
 
 	//meta! userInfo="Process messages defined in code", id="0"

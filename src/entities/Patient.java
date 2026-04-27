@@ -103,7 +103,7 @@ public class Patient implements Comparable<Patient> {
                 return 1;
             }
 
-            return Double.compare(this.arrivalTimeQueueExam, iny.arrivalTimeQueueExam);
+            return Double.compare(this.arrivalTimeQueueExam, iny.arrivalTimeQueueExam); //premysliet
         }
 
         int prioCompare = Integer.compare(this.priority, iny.priority);
@@ -112,6 +112,6 @@ public class Patient implements Comparable<Patient> {
             return prioCompare;
         }
 
-        return Double.compare(this.arrivalTimeQueueTreatment, iny.arrivalTimeQueueTreatment);
+        return Double.compare(this.arrivalTimeQueueTreatment, iny.arrivalTimeQueueTreatment); //premysliet
     }
 }

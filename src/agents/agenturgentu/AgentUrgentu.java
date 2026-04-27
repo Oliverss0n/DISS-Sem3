@@ -8,10 +8,10 @@ import Distributions.*;
 //meta! id="30"
 public class AgentUrgentu extends OSPABA.Agent
 {
-	private TriangularDist moveEntranceWalkInGen; // min=120, mode=150, max=300
-	private ContinuousUniformDist moveEntranceAmbulanceGen; // min=90, max=200
-	private TriangularDist moveBetweenAmbulancesGen; // min=15, mode=20, max=45
-	private ContinuousUniformDist moveExitGen; // min=150, max=240
+	private TriangularDist moveEntranceWalkInGen;
+	private ContinuousUniformDist moveEntranceAmbulanceGen;
+	private TriangularDist moveBetweenAmbulancesGen;
+	private ContinuousUniformDist moveExitGen;
 
 	public AgentUrgentu(int id, Simulation mySim, Agent parent)
 	{
@@ -19,7 +19,6 @@ public class AgentUrgentu extends OSPABA.Agent
 
 		MySimulation sim = (MySimulation) mySim;
 
-		// Initialize generators (check your S2 libraries for parameter order!)
 		this.moveEntranceWalkInGen = new TriangularDist(120.0, 300.0,150.0, sim.getGenSeed());
 		this.moveEntranceAmbulanceGen = new ContinuousUniformDist(90.0, 200.0, sim.getGenSeed());
 		this.moveBetweenAmbulancesGen = new TriangularDist(15.0,45.0,20.0, sim.getGenSeed());

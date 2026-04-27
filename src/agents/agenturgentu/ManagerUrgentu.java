@@ -22,13 +22,8 @@ public class ManagerUrgentu extends OSPABA.Manager
 		}
 	}
 
-	// =========================================================
-	// 1. ODOSIELANIE DO PROCESOV (CHODBA)
-	// =========================================================
-
 	//meta! sender="AgentBoss", id="50", type="Notice"
 	public void processNovyPacient(MessageForm message) {
-		// Pozor na pravopis: process (s dvoma 's')
 		message.setAddressee(myAgent().findAssistant(Id.processPresunVstup));
 		startContinualAssistant(message);
 	}
@@ -45,14 +40,12 @@ public class ManagerUrgentu extends OSPABA.Manager
 		startContinualAssistant(message);
 	}
 
-	// =========================================================
-	// 2. NÁVRAT Z PROCESOV (ČISTÉ METÓDY Z ABABUILDERA)
-	// =========================================================
-
 	//meta! sender="ProcessPresunVstup", id="135", type="Finish"
 	public void processFinishProcessPresunVstup(MessageForm message) {
 		MyMessage msg = (MyMessage) message;
-		((MySimulation)mySim()).log("CHODBA KONIEC: Pacient #" + msg.getPatient().getId() + " dorazil k recepcii.");
+		MySimulation sim = (MySimulation) mySim();
+
+		sim.log("CHODBA KONIEC: Pacient #" + msg.getPatient().getId() + " dorazil k recepcii.");
 		msg.setCode(Mc.novyPacient);
 		msg.setAddressee(mySim().findAgent(Id.agentVstupnehoVystrenia));
 		notice(msg);
@@ -61,7 +54,9 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="ProcessPresunOsetrenie", id="139", type="Finish"
 	public void processFinishProcessPresunOsetrenie(MessageForm message) {
 		MyMessage msg = (MyMessage) message;
-		((MySimulation)mySim()).log("CHODBA KONIEC: Pacient #" + msg.getPatient().getId() + " dorazil k ambulanciám.");
+		MySimulation sim = (MySimulation) mySim();
+
+		sim.log("CHODBA KONIEC: Pacient #" + msg.getPatient().getId() + " dorazil k ambulanciám.");
 		msg.setCode(Mc.presunNaOsetrenie);
 		msg.setAddressee(mySim().findAgent(Id.agentOsetrenia));
 		notice(msg);
@@ -70,16 +65,17 @@ public class ManagerUrgentu extends OSPABA.Manager
 	//meta! sender="ProcessPresunOdchod", id="137", type="Finish"
 	public void processFinishProcessPresunOdchod(MessageForm message) {
 		MyMessage msg = (MyMessage) message;
-		((MySimulation)mySim()).removePatient(msg.getPatient());
-		((MySimulation)mySim()).log("ODCHOD: Pacient #" + msg.getPatient().getId() + " úspešne opúšťa nemocnicu!");
+		MySimulation sim = (MySimulation) mySim();
+
+		sim.removePatient(msg.getPatient());
+		sim.log("ODCHOD: Pacient #" + msg.getPatient().getId() + " úspešne opúšťa nemocnicu!");
+
 		msg.setCode(Mc.odchodPacienta);
 		msg.setAddressee(mySim().findAgent(Id.agentBoss));
 		notice(msg);
 	}
 
-	// =========================================================
-	// 3. PREPOSIELANIE ZDROJOV (POŠTÁR)
-	// =========================================================
+
 
 	//meta! sender="AgentVstupnehoVystrenia", id="63", type="Request"
 	public void processReqZdrojeVstupAgentVstupnehoVystrenia(MessageForm message) {
@@ -117,9 +113,19 @@ public class ManagerUrgentu extends OSPABA.Manager
 		notice(message);
 	}
 
-	// =========================================================
-	// 4. DISPEČER SPRÁV (AUTOMAT)
-	// =========================================================
+	//meta! userInfo="Process messages defined in code", id="0"
+	public void processDefault(MessageForm message)
+	{
+		switch (message.code())
+		{
+		}
+	}
+
+	//meta! userInfo="Generated code: do not modify", tag="begin"
+	public void init()
+	{
+
+	}
 
 	@Override
 	public void processMessage(MessageForm message)
@@ -127,7 +133,6 @@ public class ManagerUrgentu extends OSPABA.Manager
 		switch (message.code())
 		{
 			case Mc.finish:
-				// Rozhodovanie podľa toho, ktorý proces poslal finish
 				switch (message.sender().id()) {
 					case Id.processPresunVstup:
 						processFinishProcessPresunVstup(message);
@@ -155,17 +160,33 @@ public class ManagerUrgentu extends OSPABA.Manager
 				}
 				break;
 
-			case Mc.uvolniZdrojeOsetrenie: processUvolniZdrojeOsetrenie(message); break;
-			case Mc.novyPacient: processNovyPacient(message); break;
-			case Mc.uvolniZdrojeVstup: processUvolniZdrojeVstup(message); break;
-			case Mc.odchodPacienta: processOdchodPacienta(message); break;
-			case Mc.presunNaOsetrenie: processPresunNaOsetrenie(message); break;
-			default: processDefault(message); break;
+			case Mc.uvolniZdrojeOsetrenie:
+				processUvolniZdrojeOsetrenie(message);
+			break;
+
+			case Mc.novyPacient:
+				processNovyPacient(message);
+			break;
+
+			case Mc.uvolniZdrojeVstup:
+				processUvolniZdrojeVstup(message);
+			break;
+
+			case Mc.odchodPacienta:
+				processOdchodPacienta(message);
+			break;
+
+			case Mc.presunNaOsetrenie:
+				processPresunNaOsetrenie(message);
+			break;
+
+			default:
+				processDefault(message);
+			break;
 		}
 	}
+	//meta! tag="end"
 
-	public void processDefault(MessageForm message) {}
-	public void init() {}
 
 	@Override
 	public AgentUrgentu myAgent() {

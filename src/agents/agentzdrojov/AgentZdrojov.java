@@ -40,13 +40,11 @@ public class AgentZdrojov extends OSPABA.Agent
 
 		MySimulation sim = (MySimulation) mySim();
 
-		// Inicializácia zdrojov na začiatku každej replikácie podľa nastavení zo simulácie
 		this.freeDoctors = sim.getNumDoctors();
 		this.freeNurses = sim.getNumNurses();
-		this.freeAmbulancesA = 5; // Opravený názov premennej (predtým freeAmbA)
-		this.freeAmbulancesB = 7; // Opravený názov premennej (predtým freeAmbB)
+		this.freeAmbulancesA = 5;
+		this.freeAmbulancesB = 7;
 
-		// Správne premazanie všetkých troch frontov pred novou replikáciou
 		this.queueEntrance.clear();
 		this.queueExaminationA.clear();
 		this.queueExaminationB.clear();

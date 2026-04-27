@@ -1,7 +1,5 @@
 package simulation;
 
-import OSPABA.*;
-
 public class Mc extends OSPABA.IdList
 {
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -16,4 +14,5 @@ public class Mc extends OSPABA.IdList
 
 	// 1..1000 range reserved for user
 	public static final int koniecZdrzania = 999;
+
 }

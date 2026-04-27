@@ -23,12 +23,12 @@ public class ManagerOkolia extends OSPABA.Manager
 			petriNet().clear();
 		}
 		MyMessage startWalk = new MyMessage(mySim());
-		startWalk.setCode(Mc.start); // <--- TOTO PRIDAJ
+		startWalk.setCode(Mc.start);
 		startWalk.setAddressee(myAgent().findAssistant(Id.schedulerPesi));
 		startContinualAssistant(startWalk);
 
 		MyMessage startAmbulance = new MyMessage(mySim());
-		startAmbulance.setCode(Mc.start); // <--- TOTO PRIDAJ
+		startAmbulance.setCode(Mc.start);
 		startAmbulance.setAddressee(myAgent().findAssistant(Id.schedulerSanitka));
 		startContinualAssistant(startAmbulance);
 	}
