@@ -148,15 +148,25 @@ public class ManagerUrgentu extends OSPABA.Manager
 
 			case Mc.reqZdrojeVstup:
 				switch (message.sender().id()) {
-					case Id.agentVstupnehoVystrenia: processReqZdrojeVstupAgentVstupnehoVystrenia(message); break;
-					case Id.agentZdrojov: processReqZdrojeVstupAgentZdrojov(message); break;
+					case Id.agentVstupnehoVystrenia:
+						processReqZdrojeVstupAgentVstupnehoVystrenia(message);
+					break;
+
+					case Id.agentZdrojov:
+						processReqZdrojeVstupAgentZdrojov(message);
+					break;
 				}
 				break;
 
 			case Mc.reqZdrojeOsetrenie:
 				switch (message.sender().id()) {
-					case Id.agentZdrojov: processReqZdrojeOsetrenieAgentZdrojov(message); break;
-					case Id.agentOsetrenia: processReqZdrojeOsetrenieAgentOsetrenia(message); break;
+					case Id.agentZdrojov:
+						processReqZdrojeOsetrenieAgentZdrojov(message);
+					break;
+
+					case Id.agentOsetrenia:
+						processReqZdrojeOsetrenieAgentOsetrenia(message);
+					break;
 				}
 				break;
 

@@ -13,6 +13,8 @@ public class AgentUrgentu extends OSPABA.Agent
 	private TriangularDist moveBetweenAmbulancesGen;
 	private ContinuousUniformDist moveExitGen;
 
+
+
 	public AgentUrgentu(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);

@@ -2,11 +2,15 @@ package agents.agentokolia.continualassistants;
 
 import Distributions.ExponentialDist;
 import OSPABA.*;
+import OSPAnimator.AnimShape;
+import OSPAnimator.AnimShapeItem;
 import OSPRNG.ExponentialRNG;
 import OSPRNG.WeibullRNG;
 import agents.agentokolia.*;
 import entities.Patient;
 import simulation.*;
+
+import java.awt.*;
 
 //meta! id="7"
 public class SchedulerPesi extends OSPABA.Scheduler
@@ -33,6 +37,13 @@ public class SchedulerPesi extends OSPABA.Scheduler
 		Patient newPatient = new Patient(false, mySim().currentTime());
 
 		MySimulation sim = (MySimulation) mySim();
+		//pokus o animaciu
+		if (sim.animatorExists()) {
+			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.BLUE, 12);
+			anim.setPosition(670, 500);
+			sim.animator().register(anim);
+			newPatient.setAnimItem(anim);
+		}
 		sim.addPatient(newPatient);
 
 		MyMessage noticeMsg = new MyMessage(mySim());

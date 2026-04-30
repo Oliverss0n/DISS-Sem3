@@ -5,7 +5,7 @@
       <SimId>12</SimId>
       <InternalId>34</InternalId>
       <Name>AgentVstupnehoVystrenia</Name>
-      <Bounds>81,1186,180,180</Bounds>
+      <Bounds>46,1125,180,180</Bounds>
       <Reasoner>ManagerVstupnehoVystrenia</Reasoner>
       <ReasonerBounds>74,25,32,25</ReasonerBounds>
       <UsePetriNet>false</UsePetriNet>
@@ -17,49 +17,6 @@
           <Bounds>72,94,35,18</Bounds>
         </Process>
       </Components>
-    </Agent>
-    <Agent>
-      <SimId>10</SimId>
-      <InternalId>30</InternalId>
-      <Name>AgentUrgentu</Name>
-      <Bounds>966,719,180,180</Bounds>
-      <Reasoner>ManagerUrgentu</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
-      <Components>
-        <Process>
-          <SimId>1005</SimId>
-          <InternalId>93</InternalId>
-          <Name>ProcessChodba</Name>
-          <Bounds>71,111,35,18</Bounds>
-        </Process>
-      </Components>
-    </Agent>
-    <Agent>
-      <SimId>14</SimId>
-      <InternalId>37</InternalId>
-      <Name>AgentOsetrenia</Name>
-      <Bounds>1154,1415,180,180</Bounds>
-      <Reasoner>ManagerOsetrenia</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
-      <Components>
-        <Process>
-          <SimId>1004</SimId>
-          <InternalId>87</InternalId>
-          <Name>ProcesOsetrovanie</Name>
-          <Bounds>73,104,35,18</Bounds>
-        </Process>
-      </Components>
-    </Agent>
-    <Agent>
-      <SimId>15</SimId>
-      <InternalId>41</InternalId>
-      <Name>AgentZdrojov</Name>
-      <Bounds>1927,296,180,180</Bounds>
-      <Reasoner>ManagerZdrojov</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
     </Agent>
     <Agent>
       <SimId>2</SimId>
@@ -85,6 +42,35 @@
       </Components>
     </Agent>
     <Agent>
+      <SimId>10</SimId>
+      <InternalId>30</InternalId>
+      <Name>AgentUrgentu</Name>
+      <Bounds>966,719,180,180</Bounds>
+      <Reasoner>ManagerUrgentu</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
+      <Components>
+        <Process>
+          <SimId>1007</SimId>
+          <InternalId>136</InternalId>
+          <Name>ProcessPresunOdchod</Name>
+          <Bounds>121,107,35,18</Bounds>
+        </Process>
+        <Process>
+          <SimId>1008</SimId>
+          <InternalId>138</InternalId>
+          <Name>ProcessPresunOsetrenie</Name>
+          <Bounds>72,110,35,18</Bounds>
+        </Process>
+        <Process>
+          <SimId>1006</SimId>
+          <InternalId>134</InternalId>
+          <Name>ProcessPresunVstup</Name>
+          <Bounds>23,107,35,18</Bounds>
+        </Process>
+      </Components>
+    </Agent>
+    <Agent>
       <SimId>1</SimId>
       <InternalId>1</InternalId>
       <Name>AgentBoss</Name>
@@ -92,6 +78,32 @@
       <Reasoner>ManagerBoss</Reasoner>
       <ReasonerBounds>74,25,32,25</ReasonerBounds>
       <UsePetriNet>false</UsePetriNet>
+    </Agent>
+    <Agent>
+      <SimId>15</SimId>
+      <InternalId>41</InternalId>
+      <Name>AgentZdrojov</Name>
+      <Bounds>1894,795,180,180</Bounds>
+      <Reasoner>ManagerZdrojov</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
+    </Agent>
+    <Agent>
+      <SimId>14</SimId>
+      <InternalId>37</InternalId>
+      <Name>AgentOsetrenia</Name>
+      <Bounds>1090,1501,180,180</Bounds>
+      <Reasoner>ManagerOsetrenia</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
+      <Components>
+        <Process>
+          <SimId>1004</SimId>
+          <InternalId>87</InternalId>
+          <Name>ProcesOsetrovanie</Name>
+          <Bounds>73,104,35,18</Bounds>
+        </Process>
+      </Components>
     </Agent>
   </Agents>
   <Messages>
@@ -104,12 +116,10 @@
       <Destination>41</Destination>
     </Message>
     <Message>
-      <SimId>1018</SimId>
-      <InternalId>69</InternalId>
-      <Name>ReqZdrojeVstup</Name>
-      <Type>RequestResponse</Type>
-      <Source>41</Source>
-      <Destination>30</Destination>
+      <InternalId>135</InternalId>
+      <Type>StartFinish</Type>
+      <Source>30</Source>
+      <Destination>134</Destination>
     </Message>
     <Message>
       <InternalId>8</InternalId>
@@ -118,40 +128,28 @@
       <Destination>7</Destination>
     </Message>
     <Message>
+      <InternalId>137</InternalId>
+      <Type>StartFinish</Type>
+      <Source>30</Source>
+      <Destination>136</Destination>
+    </Message>
+    <Message>
       <InternalId>10</InternalId>
       <Type>StartFinish</Type>
       <Source>5</Source>
       <Destination>9</Destination>
     </Message>
     <Message>
-      <SimId>1021</SimId>
-      <InternalId>75</InternalId>
-      <Name>ReqZdrojeOsetrenie</Name>
-      <Type>RequestResponse</Type>
-      <Source>37</Source>
-      <Destination>30</Destination>
+      <InternalId>139</InternalId>
+      <Type>StartFinish</Type>
+      <Source>30</Source>
+      <Destination>138</Destination>
     </Message>
     <Message>
       <InternalId>12</InternalId>
       <Type>Parent</Type>
       <Source>5</Source>
       <Destination>1</Destination>
-    </Message>
-    <Message>
-      <SimId>1022</SimId>
-      <InternalId>76</InternalId>
-      <Name>ReqZdrojeOsetrenie</Name>
-      <Type>RequestResponse</Type>
-      <Source>41</Source>
-      <Destination>30</Destination>
-    </Message>
-    <Message>
-      <SimId>1024</SimId>
-      <InternalId>78</InternalId>
-      <Name>ReqZdrojeOsetrenie</Name>
-      <Type>RequestResponse</Type>
-      <Source>30</Source>
-      <Destination>37</Destination>
     </Message>
     <Message>
       <InternalId>84</InternalId>
@@ -164,12 +162,6 @@
       <Type>StartFinish</Type>
       <Source>37</Source>
       <Destination>87</Destination>
-    </Message>
-    <Message>
-      <InternalId>94</InternalId>
-      <Type>StartFinish</Type>
-      <Source>30</Source>
-      <Destination>93</Destination>
     </Message>
     <Message>
       <InternalId>33</InternalId>
@@ -188,14 +180,6 @@
       <Type>Parent</Type>
       <Source>37</Source>
       <Destination>30</Destination>
-    </Message>
-    <Message>
-      <SimId>1028</SimId>
-      <InternalId>104</InternalId>
-      <Name>ReqZdrojeVstup</Name>
-      <Type>RequestResponse</Type>
-      <Source>30</Source>
-      <Destination>34</Destination>
     </Message>
     <Message>
       <InternalId>42</InternalId>
@@ -307,6 +291,14 @@
       <Source>34</Source>
       <Destination>30</Destination>
     </Message>
+    <Message>
+      <SimId>1035</SimId>
+      <InternalId>127</InternalId>
+      <Name>ReqZdrojeOsetrenie</Name>
+      <Type>RequestResponse</Type>
+      <Source>37</Source>
+      <Destination>30</Destination>
+    </Message>
   </Messages>
-  <IID>125</IID>
+  <IID>148</IID>
 </ABAsim>

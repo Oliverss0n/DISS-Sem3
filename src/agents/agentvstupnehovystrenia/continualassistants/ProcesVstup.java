@@ -26,12 +26,18 @@ public class ProcesVstup extends OSPABA.Process
 		MyMessage msg = (MyMessage) message;
 
 		Patient patient = msg.getPatient();
+		MySimulation sim = (MySimulation) mySim();
 		double duration = 0;
 
 		if (patient.isAmbulance()) {
 			duration = myAgent().getAmbualanceEntranceExamDurationGen().sample();
 		} else {
 			duration = myAgent().getWalkInEntranceExamDurationGen().sample();
+		}
+		if (patient.getAnimItem() != null && patient.getVisualAmbPosition() != null) {
+			patient.getAnimItem().moveTo(mySim().currentTime(), duration,
+					patient.getVisualAmbPosition().x,
+					patient.getVisualAmbPosition().y);
 		}
 
 		message.setCode(Mc.koniecZdrzania);

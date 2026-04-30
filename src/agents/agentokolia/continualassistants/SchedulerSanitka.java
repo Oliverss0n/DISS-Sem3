@@ -1,11 +1,15 @@
 package agents.agentokolia.continualassistants;
 
 import OSPABA.*;
+import OSPAnimator.AnimShape;
+import OSPAnimator.AnimShapeItem;
 import OSPRNG.ErlangRNG;
 import OSPRNG.GammaRNG;
 import agents.agentokolia.*;
 import entities.Patient;
 import simulation.*;
+
+import java.awt.*;
 
 //meta! id="9"
 public class SchedulerSanitka extends OSPABA.Scheduler
@@ -30,10 +34,17 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 	{
 
 		MessageForm copy = message.createCopy();
-		MySimulation sim = (MySimulation) mySim();
 		double arrivalTime = myAgent().getAmbulanceArrivals().sample();
 		Patient newPatient = new Patient(true, mySim().currentTime());
 
+		MySimulation sim = (MySimulation) mySim();
+		//pokus o animaciu
+		if (sim.animatorExists()) {
+			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.RED, 12);
+			anim.setPosition(300, 500);
+			sim.animator().register(anim);
+			newPatient.setAnimItem(anim);
+		}
 		sim.addPatient(newPatient);
 
 		MyMessage noticeMsg = new MyMessage(mySim());

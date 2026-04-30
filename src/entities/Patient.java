@@ -1,12 +1,15 @@
 package entities;
 
-/**
- * Represents a patient as a passive entity (data object).
- */
+import OSPAnimator.AnimItem;
+
+
 public class Patient implements Comparable<Patient> {
     private static int idCounter = 0;
-    private String stav = "Kráča k recepcii";
 
+    //navrhla AI ku gui
+    private String stav = "Kráča k recepcii";
+    //
+    private AnimItem animItem;
     private final int id;
     private final boolean isAmbulance;
     private int priority;
@@ -18,11 +21,17 @@ public class Patient implements Comparable<Patient> {
     private double startTimeTreatment;
     private double endTimeTreatment;
 
+    //animacia
+    private java.awt.Point visualAmbPosition;
+
+    private Nurse assignedNurse;
+    private Doctor assignedDoctor;
+
     public Patient(boolean isAmbulance, double currentTime) {
         this.id = ++idCounter;
         this.isAmbulance = isAmbulance;
         this.arrivalTimeBuilding = currentTime;
-        this.priority = -1; // Not yet assigned
+        this.priority = -1;
     }
 
 
@@ -91,6 +100,8 @@ public class Patient implements Comparable<Patient> {
         this.stav = stav;
     }
 
+
+    //navrhla AI
     @Override
     public int compareTo(Patient iny) {
 
@@ -103,7 +114,7 @@ public class Patient implements Comparable<Patient> {
                 return 1;
             }
 
-            return Double.compare(this.arrivalTimeQueueExam, iny.arrivalTimeQueueExam); //premysliet
+            return Double.compare(this.arrivalTimeQueueExam, iny.arrivalTimeQueueExam);
         }
 
         int prioCompare = Integer.compare(this.priority, iny.priority);
@@ -112,6 +123,39 @@ public class Patient implements Comparable<Patient> {
             return prioCompare;
         }
 
-        return Double.compare(this.arrivalTimeQueueTreatment, iny.arrivalTimeQueueTreatment); //premysliet
+        return Double.compare(this.arrivalTimeQueueTreatment, iny.arrivalTimeQueueTreatment);
+    }
+
+    //ANIMAICA
+    public AnimItem getAnimItem() {
+        return animItem;
+    }
+
+    public void setAnimItem(AnimItem animItem) {
+        this.animItem = animItem;
+    }
+
+    public java.awt.Point getVisualAmbPosition() {
+        return visualAmbPosition;
+    }
+
+    public void setVisualAmbPosition(java.awt.Point visualAmbPosition) {
+        this.visualAmbPosition = visualAmbPosition;
+    }
+
+    public Nurse getAssignedNurse() {
+        return assignedNurse;
+    }
+
+    public void setAssignedNurse(Nurse assignedNurse) {
+        this.assignedNurse = assignedNurse;
+    }
+
+    public Doctor getAssignedDoctor() {
+        return assignedDoctor;
+    }
+
+    public void setAssignedDoctor(Doctor assignedDoctor) {
+        this.assignedDoctor = assignedDoctor;
     }
 }

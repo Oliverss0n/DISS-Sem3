@@ -1,6 +1,8 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
+import entities.Doctor;
+import entities.Nurse;
 import entities.Patient;
 import simulation.*;
 import OSPDataStruct.SimQueue;
@@ -14,14 +16,18 @@ import java.util.Queue;
 public class AgentZdrojov extends OSPABA.Agent
 {
 
-	private int freeNurses;
-	private int freeDoctors;
+	/*private int freeNurses;
+	private int freeDoctors;*/
 	private int freeAmbulancesA;
 	private int freeAmbulancesB;
 
 	private PriorityQueue<MessageForm> queueEntrance;
 	private PriorityQueue<MessageForm> queueExaminationA;
 	private PriorityQueue<MessageForm> queueExaminationB;
+
+	// Namiesto: private int freeNurses; a private int freeDoctors;
+	private java.util.Queue<Nurse> freeNurses = new java.util.LinkedList<>();
+	private java.util.Queue<Doctor> freeDoctors = new java.util.LinkedList<>();
 
 	public AgentZdrojov(int id, Simulation mySim, Agent parent)
 	{
@@ -36,15 +42,39 @@ public class AgentZdrojov extends OSPABA.Agent
 	public void prepareReplication()
 	{
 		super.prepareReplication();
-		// Setup component for the next replication
-
 		MySimulation sim = (MySimulation) mySim();
 
-		this.freeDoctors = sim.getNumDoctors();
-		this.freeNurses = sim.getNumNurses();
+		// 1. Vytvorenie a prepojenie sestier
+		freeNurses.clear();
+		for (int i = 0; i < sim.getNumNurses(); i++) {
+			entities.Nurse n = new entities.Nurse(i + 1);
+			// Ak je zapnutá animácia, prepojíme logickú sestru s grafickým trojuholníkom
+			if (sim.animatorExists() && sim.grafikaSestier != null && i < sim.grafikaSestier.length) {
+				n.setAnimItem(sim.grafikaSestier[i]);
+			}
+			freeNurses.add(n);
+		}
+
+		// 2. Vytvorenie a prepojenie lekárov
+		freeDoctors.clear();
+		for (int i = 0; i < sim.getNumDoctors(); i++) {
+			entities.Doctor d = new entities.Doctor(i + 1);
+			// Ak je zapnutá animácia, prepojíme logického lekára s grafickým štvorcom
+			if (sim.animatorExists() && sim.grafikaLekarov != null && i < sim.grafikaLekarov.length) {
+				d.setAnimItem(sim.grafikaLekarov[i]);
+			}
+			freeDoctors.add(d);
+		}
+
+		// 3. Reset kapacít
 		this.freeAmbulancesA = 5;
 		this.freeAmbulancesB = 7;
 
+		// 4. Reset vizualizácie ambulancií (aby neostali "visieť" po reštarte)
+		for (int i = 0; i < 5; i++) sim.obsadeneAmbA[i] = false;
+		for (int i = 0; i < 7; i++) sim.obsadeneAmbB[i] = false;
+
+		// 5. Vyčistenie radov
 		this.queueEntrance.clear();
 		this.queueExaminationA.clear();
 		this.queueExaminationB.clear();
@@ -62,19 +92,19 @@ public class AgentZdrojov extends OSPABA.Agent
 	//meta! tag="end"
 
 
-	public int getFreeNurses() {
+	public Queue<Nurse> getFreeNurses() {
 		return freeNurses;
 	}
 
-	public void setFreeNurses(int freeNurses) {
+	public void setFreeNurses(Queue<Nurse> freeNurses) {
 		this.freeNurses = freeNurses;
 	}
 
-	public int getFreeDoctors() {
+	public Queue<Doctor> getFreeDoctors() {
 		return freeDoctors;
 	}
 
-	public void setFreeDoctors(int freeDoctors) {
+	public void setFreeDoctors(Queue<Doctor> freeDoctors) {
 		this.freeDoctors = freeDoctors;
 	}
 

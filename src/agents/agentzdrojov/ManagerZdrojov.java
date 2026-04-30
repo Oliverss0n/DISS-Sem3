@@ -2,6 +2,8 @@ package agents.agentzdrojov;
 
 import OSPABA.*;
 import OSPStat.Stat;
+import entities.Doctor;
+import entities.Nurse;
 import simulation.*;
 
 import java.util.LinkedList;
@@ -10,8 +12,6 @@ import java.util.Queue;
 //meta! id="41"
 public class ManagerZdrojov extends OSPABA.Manager
 {
-
-
 
 	public ManagerZdrojov(int id, Simulation mySim, Agent myAgent)
 	{
@@ -23,13 +23,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 	public void prepareReplication()
 	{
 		super.prepareReplication();
-		// Setup component for the next replication
-
 		if (petriNet() != null)
 		{
 			petriNet().clear();
 		}
-
 	}
 
 	//meta! sender="AgentUrgentu", id="110", type="Request"
@@ -39,8 +36,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 		int priorita = msg.getPatient().getPriority();
 
 		msg.getPatient().setArrivalTimeQueueTreatment(mySim().currentTime());
-
-		// TOTO SME PRIDALI PRE GUI:
 		msg.getPatient().setStav("Čaká v rade na Ošetrenie");
 
 		if (priorita == 1 || priorita == 2) {
@@ -57,7 +52,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 		checkQueues();
 	}
 
-
 	//meta! userInfo="Process messages defined in code", id="0"
 	public void processDefault(MessageForm message)
 	{
@@ -72,19 +66,28 @@ public class ManagerZdrojov extends OSPABA.Manager
 		MyMessage msg = (MyMessage) message;
 		msg.getPatient().setArrivalTimeQueueExam(mySim().currentTime());
 
-		// TOTO SME PRIDALI PRE GUI:
 		msg.getPatient().setStav("Čaká v rade na Vstup");
 
 		myAgent().getQueueEntrance().add(msg);
 		checkQueues();
 	}
 
-
 	//meta! sender="AgentUrgentu", id="112", type="Notice"
 	public void processUvolniZdrojeVstup(MessageForm message)
 	{
-		myAgent().setFreeNurses(myAgent().getFreeNurses() + 1);
+		MyMessage msg = (MyMessage) message;
+		MySimulation sim = (MySimulation) mySim();
+
+		// Získame sestru, ktorá vyšetrovala pacienta
+		Nurse sestra = msg.getPatient().getAssignedNurse();
+
+		// Sestra skončila, vraciame ju do frontu voľných
+		myAgent().getFreeNurses().add(sestra);
+		sim.uvolniSestru(sestra.getAnimItem());
+
 		myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() + 1);
+		sim.odomkniVizualnuAmbulanciu("B", msg.getPatient().getVisualAmbPosition());
+
 		checkQueues();
 	}
 
@@ -92,23 +95,31 @@ public class ManagerZdrojov extends OSPABA.Manager
 	public void processUvolniZdrojeOsetrenie(MessageForm message)
 	{
 		MyMessage msg = (MyMessage) message;
+		MySimulation sim = (MySimulation) mySim();
 
-		// Vrátime sestru a LEKÁRA (tento predtým chýbal)
-		myAgent().setFreeNurses(myAgent().getFreeNurses() + 1);
-		myAgent().setFreeDoctors(myAgent().getFreeDoctors() + 1);
+		// Získame konkrétny personál od pacienta
+		Nurse sestra = msg.getPatient().getAssignedNurse();
+		Doctor lekar = msg.getPatient().getAssignedDoctor();
 
-		// Zistíme, či nám pacient vracia A alebo B
+		// Personál vraciame do frontov voľných
+		myAgent().getFreeNurses().add(sestra);
+		myAgent().getFreeDoctors().add(lekar);
+
+		sim.uvolniSestru(sestra.getAnimItem());
+		sim.uvolniLekara(lekar.getAnimItem());
+
 		if (msg.getAmbulanceType().equals("A")) {
 			myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() + 1);
 		} else {
 			myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() + 1);
 		}
 
+		sim.odomkniVizualnuAmbulanciu(msg.getAmbulanceType(), msg.getPatient().getVisualAmbPosition());
+
 		checkQueues();
 	}
 
-	//navrhnute pomocou AI
-	// --- 6. SRDCE ROZDEĽOVANIA (TVOJA METÓDA) ---
+	//vygenerovane pomocou AI
 	private void checkQueues() {
 		boolean changed = true;
 		MySimulation sim = (MySimulation) mySim();
@@ -116,39 +127,27 @@ public class ManagerZdrojov extends OSPABA.Manager
 		while (changed) {
 			changed = false;
 
-			// A) SKONTROLUJEME VSTUP
-			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
-				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
-
-				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
-				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
-
-				msg.getPatient().setStartTimeExam(mySim().currentTime());
-
-				// TOTO SME PRIDALI PRE GUI:
-				msg.getPatient().setStav("Vyšetruje sa na Vstupe");
-
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
-				response(msg);
-				changed = true;
-				continue;
-			}
-
-			// B) SKONTROLUJEME OŠETRENIE A
-			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty()) {
+			// 1. NAJPRV OŠETRENIE A
+			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
-
 				myAgent().getQueueExaminationB().remove(msg);
 
-				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
-				myAgent().setFreeDoctors(myAgent().getFreeDoctors() - 1);
+				Nurse sestra = myAgent().getFreeNurses().poll();
+				Doctor lekar = myAgent().getFreeDoctors().poll();
 				myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() - 1);
 
 				msg.setAmbulanceType("A");
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
-
-				// TOTO SME PRIDALI PRE GUI:
 				msg.getPatient().setStav("Ošetruje sa v Amb. A");
+
+				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("A");
+				msg.getPatient().setVisualAmbPosition(pos);
+
+				msg.getPatient().setAssignedNurse(sestra);
+				msg.getPatient().setAssignedDoctor(lekar);
+
+				sim.obsadSestru(pos, sestra.getAnimItem());
+				sim.obsadLekara(pos, lekar.getAnimItem());
 
 				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
 				response(msg);
@@ -156,29 +155,57 @@ public class ManagerZdrojov extends OSPABA.Manager
 				continue;
 			}
 
-			// C) SKONTROLUJEME OŠETRENIE B
-			if (myAgent().getFreeNurses() > 0 && myAgent().getFreeDoctors() > 0 && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty()) {
+			// 2. POTOM OŠETRENIE B
+			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
-
 				myAgent().getQueueExaminationA().remove(msg);
 
-				myAgent().setFreeNurses(myAgent().getFreeNurses() - 1);
-				myAgent().setFreeDoctors(myAgent().getFreeDoctors() - 1);
+				Nurse sestra = myAgent().getFreeNurses().poll();
+				Doctor lekar = myAgent().getFreeDoctors().poll();
 				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
 				msg.setAmbulanceType("B");
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
-
-				// TOTO SME PRIDALI PRE GUI:
 				msg.getPatient().setStav("Ošetruje sa v Amb. B");
 
+				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
+				msg.getPatient().setVisualAmbPosition(pos);
+
+				msg.getPatient().setAssignedNurse(sestra);
+				msg.getPatient().setAssignedDoctor(lekar);
+
+				sim.obsadSestru(pos, sestra.getAnimItem());
+				sim.obsadLekara(pos, lekar.getAnimItem());
+
 				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
+				response(msg);
+				changed = true;
+				continue;
+			}
+
+			// 3. AŽ NAKONIEC VSTUP (Ak zostali voľné sestry)
+			if (!myAgent().getFreeNurses().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
+				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
+
+				Nurse sestra = myAgent().getFreeNurses().poll();
+				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
+
+				msg.getPatient().setStartTimeExam(mySim().currentTime());
+				msg.getPatient().setStav("Vyšetruje sa na Vstupnej prehliadke");
+
+				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
+				msg.getPatient().setVisualAmbPosition(pos);
+
+				msg.getPatient().setAssignedNurse(sestra);
+
+				sim.obsadSestru(pos, sestra.getAnimItem());
+
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
 				response(msg);
 				changed = true;
 			}
 		}
 	}
-
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	public void init()
@@ -190,25 +217,25 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.reqZdrojeOsetrenie:
-			processReqZdrojeOsetrenie(message);
-		break;
+			case Mc.reqZdrojeOsetrenie:
+				processReqZdrojeOsetrenie(message);
+				break;
 
-		case Mc.uvolniZdrojeVstup:
-			processUvolniZdrojeVstup(message);
-		break;
+			case Mc.uvolniZdrojeVstup:
+				processUvolniZdrojeVstup(message);
+				break;
 
-		case Mc.reqZdrojeVstup:
-			processReqZdrojeVstup(message);
-		break;
+			case Mc.reqZdrojeVstup:
+				processReqZdrojeVstup(message);
+				break;
 
-		case Mc.uvolniZdrojeOsetrenie:
-			processUvolniZdrojeOsetrenie(message);
-		break;
+			case Mc.uvolniZdrojeOsetrenie:
+				processUvolniZdrojeOsetrenie(message);
+				break;
 
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"

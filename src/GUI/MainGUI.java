@@ -11,6 +11,16 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
+import OSPAnimator.AnimShape;
+import OSPAnimator.AnimShapeItem;
+import OSPAnimator.AnimTextItem;
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
+import java.awt.image.BufferedImage;
+import OSPAnimator.AnimQueue;
+
+
 public class MainGUI extends JFrame implements ISimDelegate {
 
     // --- Simulačné jadro a vlákno ---
@@ -39,6 +49,13 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private DefaultTableModel modelChodba, modelVstup, modelOsetrenie;
     private JTable tblChodba, tblVstup, tblOsetrenie;
 
+    // --- Animacia ---
+    private JCheckBox cbAnimation;
+    private JPanel animationPanel;
+    private JSplitPane mainSplit;
+
+    private JLabel lblAmbAStatus, lblAmbBStatus;
+
     public MainGUI() {
         // Inicializácia jadra
         sim = new MySimulation();
@@ -60,41 +77,41 @@ public class MainGUI extends JFrame implements ISimDelegate {
         // Vytvorenie GUI okna
         setTitle("Nemocnica - Urgentný príjem");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(1000, 800); // Mierne zväčšené pre lepšiu viditeľnosť logov
+        setSize(1000, 800);
 
-        // Nastavenie prepojenia logera hneď na začiatku
-        // POZOR: MySimulation už musí mať implementované metódy setLogger a setLogEnabled
         sim.setLogger(msg -> {
             SwingUtilities.invokeLater(() -> {
                 taLogs.append(msg + "\n");
-                taLogs.setCaretPosition(taLogs.getDocument().getLength()); // Automatický scroll dole
+                taLogs.setCaretPosition(taLogs.getDocument().getLength());
             });
         });
 
-        // --- ZOSTAVENIE HLAVNÉHO ROZLOŽENIA ---
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
         topPanel.add(buildControlPanel(), BorderLayout.NORTH);
         topPanel.add(buildStatsPanel(), BorderLayout.CENTER);
 
-        // Rozdelenie obrazovky na tabuľku (hore) a logy (dole) pomocou JSplitPane
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTablePanel(), buildLogPanel());
-        splitPane.setResizeWeight(0.5); // Tabuľka a logy si rozdelia priestor 1:1
+        JSplitPane tableLogSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTablePanel(), buildLogPanel());
+        tableLogSplit.setResizeWeight(0.5);
+
+        animationPanel = new JPanel(new BorderLayout());
+        animationPanel.setBorder(BorderFactory.createTitledBorder("Mapa Urgentu"));
+        animationPanel.add(new JLabel("Animácia je vypnutá", SwingConstants.CENTER), BorderLayout.CENTER);
+
+        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableLogSplit, animationPanel);
+        mainSplit.setResizeWeight(0.5);
+        mainSplit.setDividerLocation(500);
+        mainSplit.setOneTouchExpandable(true);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         mainPanel.add(topPanel, BorderLayout.NORTH);
-        mainPanel.add(splitPane, BorderLayout.CENTER);
+        mainPanel.add(mainSplit, BorderLayout.CENTER);
 
-        // Synchronizácia počiatočného stavu logovania
         sim.setLogEnabled(cbVisualMode.isSelected());
 
         add(mainPanel);
         setVisible(true);
     }
-
-    // ==========================================
-    // 1. ZOSTAVENIE GUI
-    // ==========================================
 
     private JPanel buildControlPanel() {
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
@@ -105,15 +122,14 @@ public class MainGUI extends JFrame implements ISimDelegate {
         tfNurses = new JTextField("5", 3);
 
         cbVisualMode = new JCheckBox("Vizuálny režim", true);
+        cbAnimation = new JCheckBox("Animácia", false);
 
-        // Slider od 1 (najpomalšie) do 100 (najrýchlejšie)
         speedSlider = new JSlider(1, 100, 10);
         lblSpeedDisplay = new JLabel("Rýchlosť: 1.0x");
 
         btnStart = new JButton("Spustiť");
         btnPause = new JButton("Pauza");
 
-        // --- LISTENERS ---
         btnStart.addActionListener(e -> runSim());
 
         btnPause.addActionListener(e -> {
@@ -131,16 +147,45 @@ public class MainGUI extends JFrame implements ISimDelegate {
             updateSimSpeed();
         });
 
-        cbVisualMode.addActionListener(e -> {
-            speedSlider.setEnabled(cbVisualMode.isSelected());
+        java.awt.event.ActionListener visualModeListener = e -> {
+            boolean isAnyVisualOn = cbVisualMode.isSelected() || cbAnimation.isSelected();
+            speedSlider.setEnabled(isAnyVisualOn);
             updateSimSpeed();
-            sim.setLogEnabled(cbVisualMode.isSelected()); // Aktualizuje stav logovania v simulácii
-        });
+            sim.setLogEnabled(cbVisualMode.isSelected());
+
+            // Dynamické zapnutie/vypnutie animátora podľa stavu checkboxu
+            if (cbAnimation.isSelected()) {
+                if (!sim.animatorExists()) {
+                    sim.createAnimator();
+                    sim.animator().setSynchronizedTime(false);
+
+                    animationPanel.removeAll();
+                    animationPanel.add(sim.animator().canvas(), BorderLayout.CENTER);
+                    setupAnimationEnvironment(sim);
+
+                    animationPanel.revalidate();
+                    animationPanel.repaint();
+                }
+            } else {
+                if (sim.animatorExists()) {
+                    sim.removeAnimator(); // Toto natvrdo odpojí animátor od simulačného jadra
+
+                    animationPanel.removeAll();
+                    animationPanel.add(new JLabel("Animácia je vypnutá (Turbomód)", SwingConstants.CENTER), BorderLayout.CENTER);
+                    animationPanel.revalidate();
+                    animationPanel.repaint();
+                }
+            }
+        };
+
+        cbVisualMode.addActionListener(visualModeListener);
+        cbAnimation.addActionListener(visualModeListener);
 
         p.add(new JLabel("Replikácie:")); p.add(tfReplications);
         p.add(new JLabel("Lekári:")); p.add(tfDoctors);
         p.add(new JLabel("Sestry:")); p.add(tfNurses);
         p.add(cbVisualMode);
+        p.add(cbAnimation);
         p.add(btnStart); p.add(btnPause);
         p.add(speedSlider); p.add(lblSpeedDisplay);
 
@@ -154,14 +199,17 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JPanel buildStatsPanel() {
         JPanel p = new JPanel(new GridLayout(1, 2, 10, 10));
 
-        JPanel curPanel = new JPanel(new GridLayout(4, 1));
+        JPanel curPanel = new JPanel(new GridLayout(6, 1));
         curPanel.setBorder(BorderFactory.createTitledBorder("Aktuálny stav"));
         lblCurQueueEntrance = new JLabel("Rad na vstup: 0");
         lblCurQueueExam = new JLabel("Rad na ošetrenie: 0");
         lblCurFreeDoctors = new JLabel("Voľní lekári: 0");
         lblCurFreeNurses = new JLabel("Voľné sestry: 0");
+        lblAmbAStatus = new JLabel("Amb A: ");
+        lblAmbBStatus = new JLabel("Amb B: ");
         curPanel.add(lblCurQueueEntrance); curPanel.add(lblCurQueueExam);
         curPanel.add(lblCurFreeDoctors); curPanel.add(lblCurFreeNurses);
+        curPanel.add(lblAmbAStatus); curPanel.add(lblAmbBStatus);
 
         JPanel globPanel = new JPanel(new GridLayout(3, 1));
         globPanel.setBorder(BorderFactory.createTitledBorder("Priemery"));
@@ -179,24 +227,20 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JPanel buildTablePanel() {
         JPanel mainTablePanel = new JPanel(new GridLayout(1, 3, 5, 5));
 
-        // Spoločné stĺpce pre všetky tabuľky
         String[] columns = {"ID", "Typ", "Prio", "Stav / Čas"};
 
-        // 1. Tabuľka - CHODBA
         modelChodba = new DefaultTableModel(columns, 0);
         tblChodba = new JTable(modelChodba);
         JPanel p1 = new JPanel(new BorderLayout());
         p1.setBorder(BorderFactory.createTitledBorder("Presuny (Chodba)"));
         p1.add(new JScrollPane(tblChodba), BorderLayout.CENTER);
 
-        // 2. Tabuľka - VSTUP
         modelVstup = new DefaultTableModel(columns, 0);
         tblVstup = new JTable(modelVstup);
         JPanel p2 = new JPanel(new BorderLayout());
         p2.setBorder(BorderFactory.createTitledBorder("Vstupné vyšetrenie"));
         p2.add(new JScrollPane(tblVstup), BorderLayout.CENTER);
 
-        // 3. Tabuľka - OŠETROVANIE
         modelOsetrenie = new DefaultTableModel(columns, 0);
         tblOsetrenie = new JTable(modelOsetrenie);
         JPanel p3 = new JPanel(new BorderLayout());
@@ -231,14 +275,10 @@ public class MainGUI extends JFrame implements ISimDelegate {
         return p;
     }
 
-    // ==========================================
-    // 2. RIADENIE SIMULÁCIE (Podľa vzoru)
-    // ==========================================
 
     private void runSim() {
         if (btnStart.getText().equals("Spustiť")) {
 
-            // --- PRIDAJ TOTO: Úplne čistý štart! ---
             sim = new MySimulation();
             sim.registerDelegate(this);
             sim.setLogger(msg -> {
@@ -248,7 +288,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 });
             });
             sim.setLogEnabled(cbVisualMode.isSelected());
-            // ---------------------------------------
 
             int docs = Integer.parseInt(tfDoctors.getText());
             int nurses = Integer.parseInt(tfNurses.getText());
@@ -257,15 +296,29 @@ public class MainGUI extends JFrame implements ISimDelegate {
             sim.setNumDoctors(docs);
             sim.setNumNurses(nurses);
 
-            taLogs.setText(""); // Vymazanie starej konzoly
+            taLogs.setText("");
             updateSimSpeed();
+
+            animationPanel.removeAll();
+
+            if (cbAnimation.isSelected()) {
+                sim.createAnimator();
+                //sim.animator().setSynchronizedTime(true); //bolo doteraz
+                sim.animator().setSynchronizedTime(false);
+
+                animationPanel.add(sim.animator().canvas(), BorderLayout.CENTER);
+                setupAnimationEnvironment(sim);
+            } else {
+                animationPanel.add(new JLabel("Animácia je vypnutá", SwingConstants.CENTER), BorderLayout.CENTER);
+            }
+            animationPanel.revalidate();
+            animationPanel.repaint();
 
             simThread = new Thread() {
                 public void run() {
                     try {
                         sim.simulate(reps, 2419200.0);
                     } catch (Exception ex) {
-                        // Pre istotu si tu necháme tento chyták z minula
                         ex.printStackTrace();
                     }
                 }
@@ -280,34 +333,25 @@ public class MainGUI extends JFrame implements ISimDelegate {
     }
 
     private void updateSimSpeed() {
-        if (!cbVisualMode.isSelected()) {
-            sim.setMaxSimSpeed(); // Rýchlosť bez obmedzenia
+        if (!cbVisualMode.isSelected() && !cbAnimation.isSelected()) {
+            sim.setMaxSimSpeed();
             lblSpeedDisplay.setText("Rýchlosť: MAX");
         } else {
             int sliderValue = speedSlider.getValue();
             double speedMultiplier;
 
-            // Logika rozdelenia slidera:
             if (sliderValue < 10) {
-                // 1. SPOMALENÝ REŽIM (Slow-motion: 0.1x až 0.9x)
                 speedMultiplier = sliderValue / 10.0;
             } else if (sliderValue == 10) {
-                // 2. REÁLNY ČAS (1:1)
                 speedMultiplier = 1.0;
             } else {
-                // 3. ZRÝCHLENÝ REŽIM (Od 1.1x až po cca 4000x)
-                // Používame matematickú mocninu pre príjemné nelineárne zrýchľovanie
                 double base = sliderValue - 9;
                 speedMultiplier = (base * base) * 0.5;
             }
 
-            // OSPABA logika:
-            // duration = pauza v reálnom čase (0.02 sekundy = 50 FPS)
-            // interval = simulačný čas, ktorý prejde za túto pauzu
             double duration = 0.02;
             double interval = duration * speedMultiplier;
 
-            // Formátovanie textu labelu
             if (speedMultiplier < 10.0) {
                 lblSpeedDisplay.setText(String.format("Rýchlosť: %.1fx", speedMultiplier));
             } else {
@@ -318,9 +362,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         }
     }
 
-    // ==========================================
-    // 3. ISimDelegate METÓDY
-    // ==========================================
+
 
     @Override
     public void simStateChanged(Simulation simulation, SimState simState) {
@@ -329,11 +371,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 case replicationStopped:
                     lblGlobReplications.setText("Replikácia: " + (sim.currentReplication() + 1));
                     break;
-
                 case stopped:
                     btnStart.setText("Spustiť");
                     break;
-
                 case running:
                 case replicationRunning:
                     break;
@@ -343,68 +383,105 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     @Override
     public void refresh(Simulation smltn) {
-        // Ak nie je vizuálny režim, šetríme výkon a končíme
-        if (!cbVisualMode.isSelected()) return;
+        if (!cbVisualMode.isSelected() && !cbAnimation.isSelected()) return;
 
-        // Výpočet pekného času
         double totalSeconds = smltn.currentTime();
         long days = (long) totalSeconds / 86400;
         long hours = (long) (totalSeconds % 86400) / 3600;
         long minutes = (long) (totalSeconds % 3600) / 60;
         long seconds = (long) totalSeconds % 60;
 
-        // Aktualizácia GUI musí bežať v SwingUtilities vlákne
         SwingUtilities.invokeLater(() -> {
             lblSimTime.setText(String.format(" Čas: Deň %d | %02d:%02d:%02d", days + 1, hours, minutes, seconds));
 
             lblCurQueueEntrance.setText("Rad na vstup: " + sim.getQueueEntranceSize());
             lblCurQueueExam.setText("Rad na ošetrenie: " + sim.getQueueExamSize());
-            lblCurFreeDoctors.setText("Voľní lekári: " + sim.getFreeDoctors());
-            lblCurFreeNurses.setText("Voľné sestry: " + sim.getFreeNurses());
+            lblCurFreeDoctors.setText("Voľní lekári: " + sim.agentZdrojov().getFreeDoctors().size());
+            lblCurFreeNurses.setText("Voľné sestry: " + sim.agentZdrojov().getFreeNurses().size());
+            StringBuilder statusA = new StringBuilder("Amb A: ");
+            for (boolean obsadena : sim.obsadeneAmbA) {
+                statusA.append(obsadena ? "[■] " : "[ ] ");
+            }
+            lblAmbAStatus.setText(statusA.toString());
 
-            // Vymažeme staré dáta z tabuliek
-            modelChodba.setRowCount(0);
-            modelVstup.setRowCount(0);
-            modelOsetrenie.setRowCount(0);
+            StringBuilder statusB = new StringBuilder("Amb B: ");
+            for (boolean obsadena : sim.obsadeneAmbB) {
+                statusB.append(obsadena ? "[■] " : "[ ] ");
+            }
+            lblAmbBStatus.setText(statusB.toString());
 
-            // Získame zoznam len RAZ
-            List<Patient> patients = ((MySimulation)smltn).getActivePatients();
+            if (cbVisualMode.isSelected()) {
+                modelChodba.setRowCount(0);
+                modelVstup.setRowCount(0);
+                modelOsetrenie.setRowCount(0);
 
-            // DEBUG výpis (voliteľné)
-            // System.out.println("DEBUG: V zozname je " + patients.size() + " pacientov.");
+                List<Patient> patients = ((MySimulation)smltn).getActivePatients();
 
-            // KRITICKÁ ČASŤ: Zamkneme zoznam (ArrayList), kým ho prechádzame slučkou
-            synchronized (patients) {
-                for (Patient p : patients) {
-                    String prio = p.getPriority() == -1 ? "-" : String.valueOf(p.getPriority());
-                    String typ = p.isAmbulance() ? "Sanitka" : "Pešo";
-                    String stav = p.getStav();
+                synchronized (patients) {
+                    for (Patient p : patients) {
+                        String prio = p.getPriority() == -1 ? "-" : String.valueOf(p.getPriority());
+                        String typ = p.isAmbulance() ? "Sanitka" : "Pešo";
+                        String stav = p.getStav();
 
-                    Object[] rowData = new Object[]{
-                            "#" + p.getId(),
-                            typ,
-                            prio,
-                            stav
-                    };
+                        Object[] rowData = new Object[]{
+                                "#" + p.getId(),
+                                typ,
+                                prio,
+                                stav
+                        };
 
-                    // Rozdelenie do tabuliek
-                    if (stav.contains("Kráča")) {
-                        modelChodba.addRow(rowData);
-                    }
-                    else if (stav.contains("Vstup") || stav.contains("recepcii")) {
-                        modelVstup.addRow(rowData);
-                    }
-                    else if (stav.contains("Amb") || stav.contains("Ošetrenie")) {
-                        modelOsetrenie.addRow(rowData);
+                        if (stav != null) {
+                            if (stav.contains("Kráča")) {
+                                modelChodba.addRow(rowData);
+                            }
+                            else if (stav.contains("Vstup") || stav.contains("recepcii")) {
+                                modelVstup.addRow(rowData);
+                            }
+                            else if (stav.contains("Amb") || stav.contains("Ošetrenie")) {
+                                modelOsetrenie.addRow(rowData);
+                            }
+                        }
                     }
                 }
-            } // Koniec zámku
+            }
         });
     }
 
-    // ==========================================
-    // SPÚŠŤAČ (MAIN)
-    // ==========================================
+    //pokus o animaciu - vygenerovane pomocou ai
+    //pokus o animaciu - vygenerovane pomocou ai
+    private void setupAnimationEnvironment(MySimulation sim) {
+        if (!sim.animatorExists()) return;
+
+        try {
+            java.awt.image.BufferedImage bgImage = javax.imageio.ImageIO.read(new java.io.File("img/pozadie.png")); // uisti sa, že je to pozadie_2.png
+            sim.animator().setBackgroundImage(bgImage);
+        } catch (java.io.IOException e) {
+            System.err.println("Chyba pozadia: " + e.getMessage());
+        }
+
+        // Sestry (Trojuholníky)
+        int pocetSestier = sim.getNumNurses();
+        sim.grafikaSestier = new OSPAnimator.AnimShapeItem[pocetSestier];
+        for (int i = 0; i < pocetSestier; i++) {
+            sim.grafikaSestier[i] = new OSPAnimator.AnimShapeItem(OSPAnimator.AnimShape.TRIANGLE, java.awt.Color.GREEN, 15);
+            java.awt.Point home = new java.awt.Point(220 + (i * 10), 550);
+            sim.grafikaSestier[i].setPosition(home.x, home.y);
+            sim.domovSestier.put(sim.grafikaSestier[i], home);
+            sim.animator().register(sim.grafikaSestier[i]);
+        }
+
+        // Lekári (Štvorce)
+        int pocetLekarov = sim.getNumDoctors();
+        sim.grafikaLekarov = new OSPAnimator.AnimShapeItem[pocetLekarov];
+        for (int i = 0; i < pocetLekarov; i++) {
+            sim.grafikaLekarov[i] = new OSPAnimator.AnimShapeItem(OSPAnimator.AnimShape.RECTANGLE, java.awt.Color.CYAN, 15);
+            java.awt.Point home = new java.awt.Point(220 + (i * 10), 530);
+            sim.grafikaLekarov[i].setPosition(home.x, home.y);
+            sim.domovLekarov.put(sim.grafikaLekarov[i], home);
+            sim.animator().register(sim.grafikaLekarov[i]);
+        }
+    }
+
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

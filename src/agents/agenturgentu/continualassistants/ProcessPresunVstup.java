@@ -35,6 +35,18 @@ public class ProcessPresunVstup extends OSPABA.Process
 
 		sim.log("CHODBA VSTUP: Pacient #" + patient.getId() + " sa presúva na vstup. Čas: " + String.format("%.1f", travelTime) + " s.");
 
+		//anim
+		if (patient.getAnimItem() != null) {
+			int minX = 100;  int maxX = 900;
+			int minY = 155; int maxY = 400;
+
+			double randX = minX + sim.getGenSeed().nextDouble() * (maxX - minX);
+			double randY = minY + sim.getGenSeed().nextDouble() * (maxY - minY);
+
+			// Animácia pohybu do nového bodu (randX, randY) v určitom čase[cite: 3]
+			patient.getAnimItem().moveTo(sim.currentTime(), travelTime, randX, randY);
+		}
+		//
 		message.setCode(Mc.koniecZdrzania);
 		hold(travelTime, message);
 	}

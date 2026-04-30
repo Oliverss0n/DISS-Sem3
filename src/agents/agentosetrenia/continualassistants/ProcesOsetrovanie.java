@@ -35,6 +35,12 @@ public class ProcesOsetrovanie extends OSPABA.Process
 			duration = myAgent().getWalkInExamDurationGen().sample();
 		}
 
+		if (pacient.getAnimItem() != null && pacient.getVisualAmbPosition() != null) {
+			pacient.getAnimItem().moveTo(sim.currentTime(), 0.5,
+					pacient.getVisualAmbPosition().x,
+					pacient.getVisualAmbPosition().y);
+		}
+
 		sim.log("OŠETRENIE: Pacient #" + pacient.getId() + " sa začal ošetrovať v ambulancii " + msg.getAmbulanceType() + ". Odhadovaný čas: " + String.format("%.1f", duration * 60) + " s.");
 		message.setCode(Mc.koniecZdrzania);
 		hold(duration * 60.0, message);
@@ -59,6 +65,13 @@ public class ProcesOsetrovanie extends OSPABA.Process
 		break;
 
 		case Mc.koniecZdrzania:
+			/*vygenerovala AI, pretoze mi nemizli*/
+			MySimulation sim = (MySimulation) mySim();
+			entities.Patient pacient = ((MyMessage) message).getPatient();
+			if (pacient.getAnimItem() != null) {
+				// Pošleme pacienta preč z mapy
+				pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
+			}
 			assistantFinished(message);
 		break;
 		default:

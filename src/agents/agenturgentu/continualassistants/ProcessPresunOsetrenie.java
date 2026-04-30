@@ -30,6 +30,13 @@ public class ProcessPresunOsetrenie extends OSPABA.Process
 		double travelTime = myAgent().getMoveBetweenAmbulancesGen().sample();
 
 		sim.log("CHODBA OŠETRENIE: Pacient #" + patient.getId() + " sa presúva k ambulancii. Čas: " + String.format("%.1f", travelTime) + " s.");
+		if (patient.getAnimItem() != null) {
+			// Vygenerovanie náhodnej pozície niekde v strednej chodbe
+			double randX = 300 + sim.getGenSeed().nextDouble() * 400;
+			double randY = 200 + sim.getGenSeed().nextDouble() * 100;
+
+			patient.getAnimItem().moveTo(sim.currentTime(), travelTime, randX, randY);
+		}
 		message.setCode(Mc.koniecZdrzania);
 		hold(travelTime, message);
 	}

@@ -1,6 +1,11 @@
 package simulation;
 
+import Distributions.TriangularDist;
 import OSPABA.*;
+import OSPAnimator.AnimQueue;
+import OSPAnimator.AnimShape;
+import OSPAnimator.AnimShapeItem;
+import OSPAnimator.AnimTextItem;
 import agents.agentosetrenia.*;
 import agents.agentokolia.*;
 import agents.agentzdrojov.*;
@@ -9,7 +14,10 @@ import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
 import entities.Patient;
 
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -20,9 +28,19 @@ public class MySimulation extends OSPABA.Simulation
 	private int numNurses;
 
 	//private List<Patient> activePatients = new LinkedList<>();
-	private List<Patient> activePatients = new ArrayList<>();
-	private boolean logEnabled = false; // Príznak vizuálneho režimu
+	//private List<Patient> activePatients = new ArrayList<>();
+	private List<Patient> activePatients = Collections.synchronizedList(new ArrayList<>());
+	private boolean logEnabled = false;
 	private Consumer<String> logger;
+
+	public AnimShapeItem[] grafikaSestier;
+	public AnimShapeItem[] grafikaLekarov;
+
+	private AnimQueue radVstup;
+	private AnimQueue radOsetrenie;
+
+	public java.util.Map<OSPAnimator.AnimShapeItem, java.awt.Point> domovSestier = new java.util.HashMap<>();
+	public java.util.Map<OSPAnimator.AnimShapeItem, java.awt.Point> domovLekarov = new java.util.HashMap<>();
 
 	public void setLogEnabled(boolean enabled) {
 		this.logEnabled = enabled;
@@ -33,8 +51,6 @@ public class MySimulation extends OSPABA.Simulation
 	}
 
 	public void log(String message) {
-		// Ak nie je zapnutý vizuálny režim, metóda skončí okamžite
-		// Tým sa vyhneme réžii so SwingUtilities a prekresľovaním GUI
 		if (logEnabled && logger != null) {
 			logger.accept(String.format("[%.2f] %s", currentTime(), message));
 		}
@@ -177,13 +193,6 @@ public AgentZdrojov agentZdrojov()
 		return agentZdrojov().getQueueExaminationA().size() + agentZdrojov().getQueueExaminationB().size();
 	}
 
-	public int getFreeDoctors() {
-		return agentZdrojov().getFreeDoctors();
-	}
-
-	public int getFreeNurses() {
-		return agentZdrojov().getFreeNurses();
-	}
 
 	public int getFreeAmbulancesA() {
 		return agentZdrojov().getFreeAmbulancesA();
@@ -196,4 +205,106 @@ public AgentZdrojov agentZdrojov()
 	public Random getGenSeed() {
 		return genSeed;
 	}
+
+	//------------------------------pokus o animaciu-----------------------------------------
+	public void obsadSestru(java.awt.Point ciel, OSPAnimator.AnimShapeItem sestra) {
+		if (animatorExists() && sestra != null) {
+			sestra.setColor(Color.RED);
+			// Presunie sestru do ambulancie (s jemným posunom +15, aby nestála presne na pacientovi)
+			sestra.moveTo(currentTime(), 0.5, ciel.x + 15, ciel.y);
+		}
+	}
+
+	public void uvolniSestru(OSPAnimator.AnimShapeItem sestra) {
+		if (animatorExists() && sestra != null) {
+			sestra.setColor(Color.GREEN);
+			java.awt.Point home = domovSestier.get(sestra);
+			if (home != null) {
+				// Návrat na základňu k vchodu sanitiek
+				sestra.moveTo(currentTime(), 0.5, home.x, home.y);
+			}
+		}
+	}
+
+	public void obsadLekara(java.awt.Point ciel, OSPAnimator.AnimShapeItem lekar) {
+		if (animatorExists() && lekar != null) {
+			lekar.setColor(Color.RED);
+			// Presunie lekára do ambulancie (s jemným posunom -15)
+			lekar.moveTo(currentTime(), 0.5, ciel.x - 15, ciel.y);
+		}
+	}
+
+	public void uvolniLekara(OSPAnimator.AnimShapeItem lekar) {
+		if (animatorExists() && lekar != null) {
+			lekar.setColor(Color.CYAN);
+			java.awt.Point home = domovLekarov.get(lekar);
+			if (home != null) {
+				// Návrat na základňu k vchodu sanitiek
+				lekar.moveTo(currentTime(), 0.5, home.x, home.y);
+			}
+		}
+	}
+
+	public AnimQueue getRadVstup() { return radVstup; }
+	public void setRadVstup(AnimQueue radVstup) { this.radVstup = radVstup; }
+
+	public AnimQueue getRadOsetrenie() { return radOsetrenie; }
+	public void setRadOsetrenie(AnimQueue radOsetrenie) { this.radOsetrenie = radOsetrenie; }
+
+
+
+	//ANIMACIA - TESTOVANIE
+
+	// 5x Ambulancia A (ľavá strana)
+	// 5x Ambulancia A (teraz na PRAVEJ strane)
+	public java.awt.Point[] bodyAmbA = {
+			new java.awt.Point(650, 100), new java.awt.Point(710, 100),
+			new java.awt.Point(770, 100), new java.awt.Point(830, 100),
+			new java.awt.Point(890, 100)
+	};
+	public boolean[] obsadeneAmbA = new boolean[5];
+
+	// 7x Ambulancia B (teraz na ĽAVEJ strane)
+	public java.awt.Point[] bodyAmbB = {
+			new java.awt.Point(130, 100), new java.awt.Point(190, 100),
+			new java.awt.Point(250, 100), new java.awt.Point(310, 100),
+			new java.awt.Point(370, 100), new java.awt.Point(430, 100),
+			new java.awt.Point(490, 100)
+	};
+	public boolean[] obsadeneAmbB = new boolean[7];
+
+	// Metóda nájde prvý voľný vizuálny obdĺžnik a vráti jeho súradnicu
+	public java.awt.Point zamkniVizualnuAmbulanciu(String typ) {
+		if ("A".equals(typ)) {
+			for (int i = 0; i < 5; i++) {
+				if (!obsadeneAmbA[i]) {
+					obsadeneAmbA[i] = true;  // <--- TOTO je ten kritický bod, ktorý musí na GUI ukázať [■]
+					return bodyAmbA[i];
+				}
+			}
+		} else {
+			for (int i = 0; i < 7; i++) {
+				if (!obsadeneAmbB[i]) {
+					obsadeneAmbB[i] = true;
+					return bodyAmbB[i];
+				}
+			}
+		}
+		return new java.awt.Point(500, 500);
+	}
+
+	// Uvoľnenie vizuálnej pozície, keď pacient odchádza
+	public void odomkniVizualnuAmbulanciu(String typ, java.awt.Point p) {
+		if (p == null) return;
+		if ("A".equals(typ)) {
+			for (int i = 0; i < 5; i++) {
+				if (bodyAmbA[i].equals(p)) obsadeneAmbA[i] = false;
+			}
+		} else {
+			for (int i = 0; i < 7; i++) {
+				if (bodyAmbB[i].equals(p)) obsadeneAmbB[i] = false;
+			}
+		}
+	}
+
 }
