@@ -27,6 +27,16 @@ public class ManagerZdrojov extends OSPABA.Manager
 		{
 			petriNet().clear();
 		}
+		MySimulation sim = (MySimulation) mySim();
+		double warmUp = sim.getWarmUpTime(); // <--- Tu si to Manažér vytiahne z MySimulation
+
+		if (warmUp > 0.0) {
+			MyMessage msg = new MyMessage(sim);
+			msg.setCode(Mc.koniecZahrievania);
+			msg.setAddressee(myAgent());
+
+			//hold(warmUp, msg); // Uspí správu na 1 deň
+		}
 	}
 
 	//meta! sender="AgentUrgentu", id="110", type="Request"
@@ -263,6 +273,9 @@ public class ManagerZdrojov extends OSPABA.Manager
 			case Mc.uvolniZdrojeOsetrenie:
 				processUvolniZdrojeOsetrenie(message);
 				break;
+			case Mc.koniecZahrievania:
+				processKoniecZahrievania(message);
+			break;
 
 			default:
 				processDefault(message);
@@ -289,4 +302,15 @@ public class ManagerZdrojov extends OSPABA.Manager
 		myAgent().getDoctorUtilizationStat().add(busyDoctors);
 	}
 
+	private void processKoniecZahrievania(MessageForm message) {
+		// Tu zmažeme všetky štatistiky nazbierané počas "zahrievacieho" dňa
+		myAgent().getWaitingTimeAmbulanceStat().clear();
+		myAgent().getWaitingTimeWalkInStat().clear();
+
+		// Pri TimeStat nezabudni, že potrebujú aktuálny čas
+		myAgent().getNurseUtilizationStat().clear(mySim().currentTime());
+		myAgent().getDoctorUtilizationStat().clear(mySim().currentTime());
+	}
+
 }
+

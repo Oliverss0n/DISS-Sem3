@@ -109,6 +109,7 @@ public class AgentZdrojov extends OSPABA.Agent
 		addOwnMessage(Mc.uvolniZdrojeVstup);
 		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
+		addOwnMessage(Mc.koniecZahrievania);
 	}
 	//meta! tag="end"
 

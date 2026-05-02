@@ -45,6 +45,10 @@ public class MySimulation extends OSPABA.Simulation
 	private Stat globalUtilNursesStat;
 	private Stat globalUtilDoctorsStat;
 
+
+	//zahrievanie
+	private double warmUpTime = 86400.0;
+
 	public MySimulation()
 	{
 		this.numDoctors = 10;
@@ -376,5 +380,13 @@ public AgentZdrojov agentZdrojov()
 
 	public Stat getGlobalUtilDoctorsStat() {
 		return globalUtilDoctorsStat;
+	}
+
+	public double getWarmUpTime() {
+		return warmUpTime;
+	}
+
+	public void setWarmUpTime(double warmUpTime) {
+		this.warmUpTime = warmUpTime;
 	}
 }
