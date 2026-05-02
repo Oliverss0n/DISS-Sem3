@@ -1,4 +1,4 @@
-/*package Statistics;
+package Statistics;
 
 public class Stat {
 
@@ -42,7 +42,7 @@ public class Stat {
     private double getTValue() {
         if (count <= 1) return 0;
 
-        int df = count - 1; //stupen volnosti
+        int df = count - 1;
 
         if (df < T_VALUES.length) {
             return T_VALUES[df];
@@ -53,7 +53,6 @@ public class Stat {
 
     public double getConfidenceIntervalHalfWidth() {
         if (count < 2) return 0;
-
         double t = getTValue();
         return t * getStdDev() / Math.sqrt(count);
     }
@@ -65,4 +64,10 @@ public class Stat {
     public double getConfidenceIntervalUpper() {
         return getMean() + getConfidenceIntervalHalfWidth();
     }
-}*/
+
+    public void clear() {
+        this.sum = 0;
+        this.sumOfPowers = 0;
+        this.count = 0;
+    }
+}

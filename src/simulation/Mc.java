@@ -14,5 +14,6 @@ public class Mc extends OSPABA.IdList
 
 	// 1..1000 range reserved for user
 	public static final int koniecZdrzania = 999;
+	public static final int koniecZahrievania = 998;
 
 }

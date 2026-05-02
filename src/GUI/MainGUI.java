@@ -3,6 +3,12 @@ package GUI;
 import OSPABA.ISimDelegate;
 import OSPABA.SimState;
 import OSPABA.Simulation;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import simulation.MySimulation;
 import entities.Patient;
 
@@ -35,9 +41,10 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JTextField tfReplications, tfDoctors, tfNurses;
 
     // --- Štatistiky ---
+    // --- Štatistiky ---
     private JLabel lblCurQueueEntrance, lblCurQueueExam, lblCurFreeDoctors, lblCurFreeNurses;
-    private JLabel lblGlobAvgTime, lblGlobAvgWait, lblGlobReplications;
-
+    // ZMENENÉ NÁZVY A PRIDANÉ NOVÉ LABELy PRE VYŤAŽENIE:
+    private JLabel lblGlobReplications, lblGlobAvgWaitAmbulance, lblGlobAvgWaitWalkIn, lblGlobUtilNurses, lblGlobUtilDoctors;
     // --- Tabuľka ---
     private DefaultTableModel tmPatients;
     private JTable tblPatients;
@@ -56,6 +63,11 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     private JLabel lblAmbAStatus, lblAmbBStatus;
 
+    //zahrievanie:
+    private XYSeries eyeballingSeries;
+    private JTextField tfEyeballingStep, tfEyeballingReps;
+
+    // --- Štatistiky ---
     public MainGUI() {
         // Inicializácia jadra
         sim = new MySimulation();
@@ -109,7 +121,12 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         sim.setLogEnabled(cbVisualMode.isSelected());
 
-        add(mainPanel);
+        // --- PRIDANIE ZÁLOŽIEK (TABS) ---
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Hlavná Simulácia", mainPanel);
+        tabbedPane.addTab("Graf Zahrievania (Eyeballing)", buildWarmUpPanel());
+
+        add(tabbedPane);
         setVisible(true);
     }
 
@@ -196,6 +213,156 @@ public class MainGUI extends JFrame implements ISimDelegate {
         return p;
     }
 
+    private JPanel buildWarmUpPanel() {
+        JPanel warmUpPanel = new JPanel(new BorderLayout());
+
+        // Horný ovládací panel
+        JPanel warmUpControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        warmUpControls.setBorder(BorderFactory.createTitledBorder("Vizuálny odhad (Eyeballing)"));
+
+        tfEyeballingStep = new JTextField("3600", 5); // Zber dát každú hodinu
+        tfEyeballingReps = new JTextField("10", 4);   // Viac replikácií pre hladší priemer
+
+        warmUpControls.add(new JLabel("Krok zberu (s):"));
+        warmUpControls.add(tfEyeballingStep);
+        warmUpControls.add(new JLabel("Replikácie:"));
+        warmUpControls.add(tfEyeballingReps);
+
+        JButton btnRunEyeballing = new JButton("Vykresliť graf zahrievania");
+        btnRunEyeballing.addActionListener(e -> runEyeballingObservation());
+        warmUpControls.add(btnRunEyeballing);
+
+        warmUpPanel.add(warmUpControls, BorderLayout.NORTH);
+
+        // Graf
+        eyeballingSeries = new XYSeries("Priemerný počet pacientov v systéme");
+        XYSeriesCollection eyeballingDataset = new XYSeriesCollection(eyeballingSeries);
+        JFreeChart eyeballingChart = ChartFactory.createXYLineChart(
+                "Sledovanie ustáleného stavu", "Simulačný čas (hodiny)", "Počet pacientov (ks)",
+                eyeballingDataset, PlotOrientation.VERTICAL, true, true, false
+        );
+
+        ChartPanel chartPanel = new ChartPanel(eyeballingChart);
+        warmUpPanel.add(chartPanel, BorderLayout.CENTER);
+
+        return warmUpPanel;
+    }
+
+    private void runEyeballingObservation() {
+        btnStart.setEnabled(false);
+        eyeballingSeries.clear();
+
+        int step = Integer.parseInt(tfEyeballingStep.getText());
+        int numReps = Integer.parseInt(tfEyeballingReps.getText());
+
+        // Simulujeme 4 týždne (28 dní = 2 419 200 sekúnd)
+        double maxTime = 2419200.0;
+        int numSteps = (int) (maxTime / step) + 1;
+
+        // Pole na sčítavanie počtu pacientov pre daný časový krok naprieč replikáciami
+        double[] eyeballingSums = new double[numSteps];
+
+        // Vytvoríme inštanciu jadra čisto pre zber dát
+        MySimulation eyeballingSim = new MySimulation();
+        eyeballingSim.setNumDoctors(Integer.parseInt(tfDoctors.getText()));
+        eyeballingSim.setNumNurses(Integer.parseInt(tfNurses.getText()));
+
+        // TOTO JE TEN TRIK:
+        // Povieme OSPABE: Každých 'step' (3600) sekúnd zavolaj refresh() a zastav sa na smiešnu 0.001 sekundy.
+        // Takto jadro beží takmer rýchlosťou turbomódu, ale GUI vie pravidelne a presne zbierať dáta.
+        eyeballingSim.setSimSpeed(step, 0.001);
+
+        final int[] lastUpdatedIndex = {-1};
+
+        eyeballingSim.registerDelegate(new ISimDelegate() {
+            @Override
+            public void refresh(Simulation simulation) {
+                MySimulation mySim = (MySimulation) simulation;
+                int index = (int) (mySim.currentTime() / step);
+
+                // Zaznamenáme stav LEN AK sme sa posunuli do novej hodiny
+                if (index < numSteps && index > lastUpdatedIndex[0]) {
+                    eyeballingSums[index] += mySim.getActivePatients().size();
+                    lastUpdatedIndex[0] = index; // Zapamätáme si, že túto hodinu sme už vybavili
+                }
+            }
+
+            @Override
+            public void simStateChanged(Simulation simulation, SimState simState) {
+                // Na konci replikácie resetujeme počítadlo pre ďalšiu replikáciu
+                if (simState == SimState.replicationStopped) {
+                    lastUpdatedIndex[0] = -1;
+                }
+
+                if (simState == SimState.stopped) {
+                    processAndDrawEyeballing(eyeballingSums, numSteps, numReps, step);
+                }
+            }
+        });
+
+        // Spustíme experiment v novom vlákne
+        new Thread(() -> {
+            eyeballingSim.simulate(numReps, maxTime);
+        }).start();
+    }
+
+    private void processAndDrawEyeballing(double[] sums, int numSteps, int numReps, int step) {
+        int windowSize = 50; // Kĺzavý priemer pre vyhladenie zubov v grafe
+
+        for (int i = 0; i < numSteps; i++) {
+            // Najprv urobíme priemer cez všetky zbehnuté replikácie
+            sums[i] = sums[i] / numReps;
+
+            // Výpočet kĺzavého priemeru (prevzaté z tvojho starého kódu)
+            double smoothedValue;
+            if (i >= windowSize - 1) {
+                double windowSum = 0;
+                for (int j = 0; j < windowSize; j++) {
+                    windowSum += sums[i - j];
+                }
+                smoothedValue = windowSum / windowSize;
+            } else {
+                double tempSum = 0;
+                for (int j = 0; j <= i; j++) {
+                    tempSum += sums[j];
+                }
+                smoothedValue = tempSum / (i + 1);
+            }
+
+            // X-os = čas v hodinách, Y-os = vyhladený počet pacientov
+            final double finalTime = (i * step) / 3600.0;
+            final double finalAvg = smoothedValue;
+
+            SwingUtilities.invokeLater(() -> eyeballingSeries.add(finalTime, finalAvg));
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            btnStart.setEnabled(true);
+            JOptionPane.showMessageDialog(this, "Graf zahrievania bol úspešne vygenerovaný!");
+        });
+    }
+
+    private void updateGlobalStatsGUI() {
+        // Tu ťaháme údaje z GLOBÁLNYCH štatistík z MySimulation
+        double waitAmbMean = sim.getGlobalWaitAmbStat().getMean();
+        double waitAmbLow = sim.getGlobalWaitAmbStat().getConfidenceIntervalLower();
+        double waitAmbHigh = sim.getGlobalWaitAmbStat().getConfidenceIntervalUpper();
+        lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.1fs <%.1f, %.1f>", waitAmbMean, waitAmbLow, waitAmbHigh));
+
+        double waitWalkInMean = sim.getGlobalWaitWalkInStat().getMean();
+        double waitWalkInLow = sim.getGlobalWaitWalkInStat().getConfidenceIntervalLower();
+        double waitWalkInHigh = sim.getGlobalWaitWalkInStat().getConfidenceIntervalUpper();
+        lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.1fs <%.1f, %.1f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
+
+        double utilNursesMean = sim.getGlobalUtilNursesStat().getMean();
+        double utilNursesPct = (sim.getNumNurses() > 0) ? (utilNursesMean / sim.getNumNurses()) * 100 : 0;
+        lblGlobUtilNurses.setText(String.format("Nurses Util.: %.2f%% (%.1f/%d)", utilNursesPct, utilNursesMean, sim.getNumNurses()));
+
+        double utilDoctorsMean = sim.getGlobalUtilDoctorsStat().getMean();
+        double utilDoctorsPct = (sim.getNumDoctors() > 0) ? (utilDoctorsMean / sim.getNumDoctors()) * 100 : 0;
+        lblGlobUtilDoctors.setText(String.format("Doctors Util.: %.2f%% (%.1f/%d)", utilDoctorsPct, utilDoctorsMean, sim.getNumDoctors()));
+    }
+
     private JPanel buildStatsPanel() {
         JPanel p = new JPanel(new GridLayout(1, 2, 10, 10));
 
@@ -211,13 +378,20 @@ public class MainGUI extends JFrame implements ISimDelegate {
         curPanel.add(lblCurFreeDoctors); curPanel.add(lblCurFreeNurses);
         curPanel.add(lblAmbAStatus); curPanel.add(lblAmbBStatus);
 
-        JPanel globPanel = new JPanel(new GridLayout(3, 1));
-        globPanel.setBorder(BorderFactory.createTitledBorder("Priemery"));
-        lblGlobReplications = new JLabel("Replikácia: 0");
-        lblGlobAvgTime = new JLabel("Čas v systéme: 0.0");
-        lblGlobAvgWait = new JLabel("Čas čakania: 0.0");
+        JPanel globPanel = new JPanel(new GridLayout(5, 1)); // Zmena na 5 riadkov
+        globPanel.setBorder(BorderFactory.createTitledBorder("Averages (Statistics)"));
+
+        lblGlobReplications = new JLabel("Replications: 0");
+        lblGlobAvgWaitAmbulance = new JLabel("Wait (Ambulance): 0.0s");
+        lblGlobAvgWaitWalkIn = new JLabel("Wait (Walk-in): 0.0s");
+        lblGlobUtilNurses = new JLabel("Nurses Util.: 0.0%");
+        lblGlobUtilDoctors = new JLabel("Doctors Util.: 0.0%");
+
         globPanel.add(lblGlobReplications);
-        globPanel.add(lblGlobAvgTime); globPanel.add(lblGlobAvgWait);
+        globPanel.add(lblGlobAvgWaitAmbulance);
+        globPanel.add(lblGlobAvgWaitWalkIn);
+        globPanel.add(lblGlobUtilNurses);
+        globPanel.add(lblGlobUtilDoctors);
 
         p.add(curPanel);
         p.add(globPanel);
@@ -370,9 +544,11 @@ public class MainGUI extends JFrame implements ISimDelegate {
             switch (simState) {
                 case replicationStopped:
                     lblGlobReplications.setText("Replikácia: " + (sim.currentReplication() + 1));
+                    updateGlobalStatsGUI(); // Aktualizácia v turbomóde po každej replikácii
                     break;
                 case stopped:
                     btnStart.setText("Spustiť");
+                    updateGlobalStatsGUI(); // Finálna aktualizácia po skončení všetkých replikácií
                     break;
                 case running:
                 case replicationRunning:
@@ -398,6 +574,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
             lblCurQueueExam.setText("Rad na ošetrenie: " + sim.getQueueExamSize());
             lblCurFreeDoctors.setText("Voľní lekári: " + sim.agentZdrojov().getFreeDoctors().size());
             lblCurFreeNurses.setText("Voľné sestry: " + sim.agentZdrojov().getFreeNurses().size());
+
             StringBuilder statusA = new StringBuilder("Amb A: ");
             for (boolean obsadena : sim.obsadeneAmbA) {
                 statusA.append(obsadena ? "[■] " : "[ ] ");
@@ -444,6 +621,35 @@ public class MainGUI extends JFrame implements ISimDelegate {
                     }
                 }
             }
+
+            MySimulation mySim = (MySimulation) smltn;
+
+            // --- OPRAVENÉ VOLANIA ŠTATISTÍK (cez agentZdrojov) ---
+
+            // 1. Čakanie - Sanitky (Aktuálna replikácia)
+            double waitAmbMean = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getMean();
+            double waitAmbLow = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalLower();
+            double waitAmbHigh = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalUpper();
+            lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.1fs <%.1f, %.1f>", waitAmbMean, waitAmbLow, waitAmbHigh));
+
+            // 2. Čakanie - Peší (Aktuálna replikácia)
+            double waitWalkInMean = mySim.agentZdrojov().getWaitingTimeWalkInStat().getMean();
+            double waitWalkInLow = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalLower();
+            double waitWalkInHigh = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalUpper();
+            lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.1fs <%.1f, %.1f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
+
+            // 3. Vyťaženie - Sestry (Aktuálna replikácia)
+            double totalNurses = mySim.getNumNurses();
+            double utilNursesMean = mySim.agentZdrojov().getNurseUtilizationStat().getMean();
+            double utilNursesPct = (totalNurses > 0) ? (utilNursesMean / totalNurses) * 100 : 0;
+            lblGlobUtilNurses.setText(String.format("Nurses Util.: %.2f%% (%.1f/%d)", utilNursesPct, utilNursesMean, (int)totalNurses));
+
+            // 4. Vyťaženie - Lekári (Aktuálna replikácia)
+            double totalDoctors = mySim.getNumDoctors();
+            double utilDoctorsMean = mySim.agentZdrojov().getDoctorUtilizationStat().getMean();
+            double utilDoctorsPct = (totalDoctors > 0) ? (utilDoctorsMean / totalDoctors) * 100 : 0;
+            lblGlobUtilDoctors.setText(String.format("Doctors Util.: %.2f%% (%.1f/%d)", utilDoctorsPct, utilDoctorsMean, (int)totalDoctors));
+
         });
     }
 

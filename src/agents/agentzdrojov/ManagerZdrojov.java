@@ -89,6 +89,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 		sim.odomkniVizualnuAmbulanciu("B", msg.getPatient().getVisualAmbPosition());
 
 		checkQueues();
+		updateResourceUtilization();
 	}
 
 	//meta! sender="AgentUrgentu", id="113", type="Notice"
@@ -117,8 +118,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 		sim.odomkniVizualnuAmbulanciu(msg.getAmbulanceType(), msg.getPatient().getVisualAmbPosition());
 
 		checkQueues();
+		updateResourceUtilization();
 	}
 
+	//vygenerovane pomocou AI
 	//vygenerovane pomocou AI
 	private void checkQueues() {
 		boolean changed = true;
@@ -140,6 +143,17 @@ public class ManagerZdrojov extends OSPABA.Manager
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
 				msg.getPatient().setStav("Ošetruje sa v Amb. A");
 
+				// --- ZBER ŠTATISTIKY ČAKANIA ---
+				// --- ZBER ŠTATISTIKY ČAKANIA ---
+				double waitingTime = mySim().currentTime() - msg.getPatient().getArrivalTimeBuilding();
+				if (msg.getPatient().isAmbulance()) {
+					myAgent().getWaitingTimeAmbulanceStat().add(waitingTime);
+				} else {
+					myAgent().getWaitingTimeWalkInStat().add(waitingTime);
+				}
+				// -------------------------------
+				// -------------------------------
+
 				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("A");
 				msg.getPatient().setVisualAmbPosition(pos);
 
@@ -149,8 +163,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 				sim.obsadSestru(pos, sestra.getAnimItem());
 				sim.obsadLekara(pos, lekar.getAnimItem());
 
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A. Čakal: " + String.format("%.1f", waitingTime) + "s.");
 				response(msg);
+
+				updateResourceUtilization(); // Aktualizácia vyťaženia
 				changed = true;
 				continue;
 			}
@@ -168,6 +184,17 @@ public class ManagerZdrojov extends OSPABA.Manager
 				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
 				msg.getPatient().setStav("Ošetruje sa v Amb. B");
 
+				// --- ZBER ŠTATISTIKY ČAKANIA ---
+				// --- ZBER ŠTATISTIKY ČAKANIA ---
+				double waitingTime = mySim().currentTime() - msg.getPatient().getArrivalTimeBuilding();
+				if (msg.getPatient().isAmbulance()) {
+					myAgent().getWaitingTimeAmbulanceStat().add(waitingTime);
+				} else {
+					myAgent().getWaitingTimeWalkInStat().add(waitingTime);
+				}
+				// -------------------------------
+				// -------------------------------
+
 				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
 				msg.getPatient().setVisualAmbPosition(pos);
 
@@ -177,8 +204,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 				sim.obsadSestru(pos, sestra.getAnimItem());
 				sim.obsadLekara(pos, lekar.getAnimItem());
 
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B. Čakal: " + String.format("%.1f", waitingTime) + "s.");
 				response(msg);
+
+				updateResourceUtilization(); // Aktualizácia vyťaženia
 				changed = true;
 				continue;
 			}
@@ -202,6 +231,8 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
 				response(msg);
+
+				updateResourceUtilization(); // Aktualizácia vyťaženia
 				changed = true;
 			}
 		}
@@ -244,6 +275,18 @@ public class ManagerZdrojov extends OSPABA.Manager
 	public AgentZdrojov myAgent()
 	{
 		return (AgentZdrojov)super.myAgent();
+	}
+
+	private void updateResourceUtilization() {
+		MySimulation sim = (MySimulation) mySim();
+
+		// Výpočet
+		int busyNurses = sim.getNumNurses() - myAgent().getFreeNurses().size();
+		int busyDoctors = sim.getNumDoctors() - myAgent().getFreeDoctors().size();
+
+		// Zápis do lokálnej TimeStat štatistiky vnútri Agenta
+		myAgent().getNurseUtilizationStat().add(busyNurses);
+		myAgent().getDoctorUtilizationStat().add(busyDoctors);
 	}
 
 }

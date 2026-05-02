@@ -1,6 +1,8 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
+import Statistics.Stat;
+import Statistics.TimeStat;
 import entities.Doctor;
 import entities.Nurse;
 import entities.Patient;
@@ -26,8 +28,15 @@ public class AgentZdrojov extends OSPABA.Agent
 	private PriorityQueue<MessageForm> queueExaminationB;
 
 	// Namiesto: private int freeNurses; a private int freeDoctors;
-	private java.util.Queue<Nurse> freeNurses = new java.util.LinkedList<>();
-	private java.util.Queue<Doctor> freeDoctors = new java.util.LinkedList<>();
+	private Queue<Nurse> freeNurses = new LinkedList<>();
+	private Queue<Doctor> freeDoctors = new LinkedList<>();
+
+	//statistiky
+	private Stat waitingTimeAmbulanceStat = new Stat();
+	private Stat waitingTimeWalkInStat = new Stat();
+	private TimeStat nurseUtilizationStat;
+	private TimeStat doctorUtilizationStat;
+
 
 	public AgentZdrojov(int id, Simulation mySim, Agent parent)
 	{
@@ -36,6 +45,8 @@ public class AgentZdrojov extends OSPABA.Agent
 		queueEntrance = createPatientQueue();
 		queueExaminationA = createPatientQueue();
 		queueExaminationB = createPatientQueue();
+		nurseUtilizationStat = new TimeStat(mySim);
+		doctorUtilizationStat = new TimeStat(mySim);
 	}
 
 	@Override
@@ -71,13 +82,23 @@ public class AgentZdrojov extends OSPABA.Agent
 		this.freeAmbulancesB = 7;
 
 		// 4. Reset vizualizácie ambulancií (aby neostali "visieť" po reštarte)
-		for (int i = 0; i < 5; i++) sim.obsadeneAmbA[i] = false;
-		for (int i = 0; i < 7; i++) sim.obsadeneAmbB[i] = false;
+		for (int i = 0; i < 5; i++){
+			sim.obsadeneAmbA[i] = false;
+		}
+		for (int i = 0; i < 7; i++){
+			sim.obsadeneAmbB[i] = false;
+		}
 
 		// 5. Vyčistenie radov
 		this.queueEntrance.clear();
 		this.queueExaminationA.clear();
 		this.queueExaminationB.clear();
+
+		waitingTimeAmbulanceStat.clear();
+		waitingTimeWalkInStat.clear();
+
+		nurseUtilizationStat.clear(mySim().currentTime());
+		doctorUtilizationStat.clear(mySim().currentTime());
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -143,6 +164,19 @@ public class AgentZdrojov extends OSPABA.Agent
 		return new PriorityQueue<>(
 				Comparator.comparing(msg -> ((MyMessage) msg).getPatient())
 		);
+	}
+
+	public Stat getWaitingTimeAmbulanceStat() {
+		return waitingTimeAmbulanceStat;
+	}
+	public Stat getWaitingTimeWalkInStat() {
+		return waitingTimeWalkInStat;
+	}
+	public TimeStat getNurseUtilizationStat() {
+		return nurseUtilizationStat;
+	}
+	public TimeStat getDoctorUtilizationStat() {
+		return doctorUtilizationStat;
 	}
 
 }

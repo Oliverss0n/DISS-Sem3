@@ -1,11 +1,10 @@
 package simulation;
 
-import Distributions.TriangularDist;
 import OSPABA.*;
 import OSPAnimator.AnimQueue;
-import OSPAnimator.AnimShape;
 import OSPAnimator.AnimShapeItem;
-import OSPAnimator.AnimTextItem;
+import Statistics.Stat;
+import Statistics.TimeStat;
 import agents.agentosetrenia.*;
 import agents.agentokolia.*;
 import agents.agentzdrojov.*;
@@ -15,10 +14,8 @@ import agents.agentvstupnehovystrenia.*;
 import entities.Patient;
 
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 public class MySimulation extends OSPABA.Simulation
@@ -39,27 +36,24 @@ public class MySimulation extends OSPABA.Simulation
 	private AnimQueue radVstup;
 	private AnimQueue radOsetrenie;
 
-	public java.util.Map<OSPAnimator.AnimShapeItem, java.awt.Point> domovSestier = new java.util.HashMap<>();
-	public java.util.Map<OSPAnimator.AnimShapeItem, java.awt.Point> domovLekarov = new java.util.HashMap<>();
+	//AI
+	public Map<AnimShapeItem, Point> domovSestier = new HashMap<>();
+	public Map<AnimShapeItem,Point> domovLekarov = new HashMap<>();
 
-	public void setLogEnabled(boolean enabled) {
-		this.logEnabled = enabled;
-	}
-
-	public void setLogger(Consumer<String> logger) {
-		this.logger = logger;
-	}
-
-	public void log(String message) {
-		if (logEnabled && logger != null) {
-			logger.accept(String.format("[%.2f] %s", currentTime(), message));
-		}
-	}
+	private Stat globalWaitAmbStat;
+	private Stat globalWaitWalkInStat;
+	private Stat globalUtilNursesStat;
+	private Stat globalUtilDoctorsStat;
 
 	public MySimulation()
 	{
 		this.numDoctors = 10;
 		this.numNurses = 10;
+		globalWaitAmbStat = new Stat();
+		globalWaitWalkInStat = new Stat();
+		globalUtilNursesStat = new Stat();
+		globalUtilDoctorsStat = new Stat();
+		//this.setWarmUpTime(86400.0);
 		init();
 	}
 
@@ -67,7 +61,10 @@ public class MySimulation extends OSPABA.Simulation
 	public void prepareSimulation()
 	{
 		super.prepareSimulation();
-		// Create global statistcis
+		globalWaitAmbStat.clear();
+		globalWaitWalkInStat.clear();
+		globalUtilNursesStat.clear();
+		globalUtilDoctorsStat.clear();
 	}
 
 	@Override
@@ -85,6 +82,10 @@ public class MySimulation extends OSPABA.Simulation
 	{
 		// Collect local statistics into global, update UI, etc...
 		super.replicationFinished();
+		globalWaitAmbStat.add(agentZdrojov().getWaitingTimeAmbulanceStat().getMean());
+		globalWaitWalkInStat.add(agentZdrojov().getWaitingTimeWalkInStat().getMean());
+		globalUtilNursesStat.add(agentZdrojov().getNurseUtilizationStat().getMean());
+		globalUtilDoctorsStat.add(agentZdrojov().getDoctorUtilizationStat().getMean());
 	}
 
 	@Override
@@ -92,6 +93,40 @@ public class MySimulation extends OSPABA.Simulation
 	{
 		// Display simulation results
 		super.simulationFinished();
+		// --- VÝPIS DO KLASICKEJ KONZOLY ---
+		System.out.println("\n======================================================");
+		System.out.println("         SIMULÁCIA UKONČENÁ - GLOBÁLNE VÝSLEDKY       ");
+		System.out.println("======================================================");
+		System.out.println("Počet vykonaných replikácií: " + currentReplication());
+		System.out.println("------------------------------------------------------");
+
+		// 1. Čakanie - Sanitky
+		double waitAmbMean = globalWaitAmbStat.getMean();
+		double waitAmbLow = globalWaitAmbStat.getConfidenceIntervalLower();
+		double waitAmbHigh = globalWaitAmbStat.getConfidenceIntervalUpper();
+		System.out.printf("Priemerný čas čakania (Sanitky): %.2f s  IS: <%.2f, %.2f>\n", waitAmbMean, waitAmbLow, waitAmbHigh);
+
+		// 2. Čakanie - Peší
+		double waitWalkInMean = globalWaitWalkInStat.getMean();
+		double waitWalkInLow = globalWaitWalkInStat.getConfidenceIntervalLower();
+		double waitWalkInHigh = globalWaitWalkInStat.getConfidenceIntervalUpper();
+		System.out.printf("Priemerný čas čakania (Peší):    %.2f s  IS: <%.2f, %.2f>\n", waitWalkInMean, waitWalkInLow, waitWalkInHigh);
+
+		// 3. Vyťaženie - Sestry
+		double utilNursesMean = globalUtilNursesStat.getMean();
+		double utilNursesPct = (numNurses > 0) ? (utilNursesMean / numNurses) * 100 : 0;
+		System.out.printf("Priemerné vyťaženie (Sestry):    %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n",
+				utilNursesPct, utilNursesMean, numNurses,
+				globalUtilNursesStat.getConfidenceIntervalLower(), globalUtilNursesStat.getConfidenceIntervalUpper());
+
+		// 4. Vyťaženie - Lekári
+		double utilDoctorsMean = globalUtilDoctorsStat.getMean();
+		double utilDoctorsPct = (numDoctors > 0) ? (utilDoctorsMean / numDoctors) * 100 : 0;
+		System.out.printf("Priemerné vyťaženie (Lekári):    %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n",
+				utilDoctorsPct, utilDoctorsMean, numDoctors,
+				globalUtilDoctorsStat.getConfidenceIntervalLower(), globalUtilDoctorsStat.getConfidenceIntervalUpper());
+
+		System.out.println("======================================================\n");
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -206,6 +241,25 @@ public AgentZdrojov agentZdrojov()
 		return genSeed;
 	}
 
+	//logy - asi niekde inde dat?
+	public void setLogEnabled(boolean enabled) {
+		this.logEnabled = enabled;
+	}
+
+	public void setLogger(Consumer<String> logger) {
+		this.logger = logger;
+	}
+
+	public void log(String message) {
+		if (logEnabled && logger != null) {
+			logger.accept(String.format("[%.2f] %s", currentTime(), message));
+		}
+	}
+
+
+
+
+
 	//------------------------------pokus o animaciu-----------------------------------------
 	public void obsadSestru(java.awt.Point ciel, OSPAnimator.AnimShapeItem sestra) {
 		if (animatorExists() && sestra != null) {
@@ -217,12 +271,11 @@ public AgentZdrojov agentZdrojov()
 
 	public void uvolniSestru(OSPAnimator.AnimShapeItem sestra) {
 		if (animatorExists() && sestra != null) {
+			// Iba zmení farbu na voľnú (Zelenú)
 			sestra.setColor(Color.GREEN);
-			java.awt.Point home = domovSestier.get(sestra);
-			if (home != null) {
-				// Návrat na základňu k vchodu sanitiek
-				sestra.moveTo(currentTime(), 0.5, home.x, home.y);
-			}
+
+			// ZMAZANÝ PRESUN DOMOV:
+			// Sestra ostáva fyzicky stáť tam, kde práve je (v poslednej ambulancii).
 		}
 	}
 
@@ -236,12 +289,11 @@ public AgentZdrojov agentZdrojov()
 
 	public void uvolniLekara(OSPAnimator.AnimShapeItem lekar) {
 		if (animatorExists() && lekar != null) {
+			// Iba zmení farbu na voľnú (Tyrkysovú)
 			lekar.setColor(Color.CYAN);
-			java.awt.Point home = domovLekarov.get(lekar);
-			if (home != null) {
-				// Návrat na základňu k vchodu sanitiek
-				lekar.moveTo(currentTime(), 0.5, home.x, home.y);
-			}
+
+			// ZMAZANÝ PRESUN DOMOV:
+			// Lekár ostáva fyzicky stáť tam, kde práve je.
 		}
 	}
 
@@ -258,18 +310,18 @@ public AgentZdrojov agentZdrojov()
 	// 5x Ambulancia A (ľavá strana)
 	// 5x Ambulancia A (teraz na PRAVEJ strane)
 	public java.awt.Point[] bodyAmbA = {
-			new java.awt.Point(650, 100), new java.awt.Point(710, 100),
-			new java.awt.Point(770, 100), new java.awt.Point(830, 100),
-			new java.awt.Point(890, 100)
+			new java.awt.Point(640, 100), new java.awt.Point(700, 100),
+			new java.awt.Point(760, 100), new java.awt.Point(820, 100),
+			new java.awt.Point(880, 100)
 	};
 	public boolean[] obsadeneAmbA = new boolean[5];
 
 	// 7x Ambulancia B (teraz na ĽAVEJ strane)
 	public java.awt.Point[] bodyAmbB = {
-			new java.awt.Point(130, 100), new java.awt.Point(190, 100),
-			new java.awt.Point(250, 100), new java.awt.Point(310, 100),
-			new java.awt.Point(370, 100), new java.awt.Point(430, 100),
-			new java.awt.Point(490, 100)
+			new java.awt.Point(120, 100), new java.awt.Point(180, 100),
+			new java.awt.Point(240, 100), new java.awt.Point(300, 100),
+			new java.awt.Point(360, 100), new java.awt.Point(420, 100),
+			new java.awt.Point(480, 100)
 	};
 	public boolean[] obsadeneAmbB = new boolean[7];
 
@@ -307,4 +359,22 @@ public AgentZdrojov agentZdrojov()
 		}
 	}
 
+	//*******************************STATISTIKY**************************************
+
+
+	public Stat getGlobalWaitAmbStat() {
+		return globalWaitAmbStat;
+	}
+
+	public Stat getGlobalWaitWalkInStat() {
+		return globalWaitWalkInStat;
+	}
+
+	public Stat getGlobalUtilNursesStat() {
+		return globalUtilNursesStat;
+	}
+
+	public Stat getGlobalUtilDoctorsStat() {
+		return globalUtilDoctorsStat;
+	}
 }

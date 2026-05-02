@@ -1,25 +1,20 @@
-/*package Statistics;
+package Statistics;
+
+import OSPABA.Simulation;
 
 public class TimeStat {
 
-    //dostane referenciu na vseobecne simulacny jadro
 
-    //1. atr cas poslednej zmeny
-    //2. atr suma hodnot
-    // uzivatel si tam poslal napr. novu hodnota vo fronte = 5 takze poznaci si do tej statistiky: aktualny stav doteraz bol 4, ten si pamata
-    // pamata si cas poslednej zmeny
-    // zobere si aktualny simulacny cas, ktory si nacita priamo z sim. jadra urobi si diferenciu: akt sim cas - cas poslednej zmeny * doterajsi stav v statistike a pripocita do sumy
-    // a ked si vyziadam metodou priemer tak to vydeli aktualnym simulacnym casom.
+    private Simulation sim;
 
-    private EventCore core;
     private double lastChangeTime;
     private double sum;
     private double sumOfPowers;
     private double lastValue;
     private double startTime;
 
-    public TimeStat(EventCore core) {
-        this.core = core;
+    public TimeStat(Simulation sim) {
+        this.sim = sim;
         this.lastChangeTime = 0;
         this.sum = 0;
         this.sumOfPowers = 0;
@@ -28,7 +23,7 @@ public class TimeStat {
     }
 
     public void add(double newValue) {
-        double currentTime = core.getCurrentTime();
+        double currentTime = sim.currentTime();
         double deltaTime = currentTime - lastChangeTime;
 
         sum += deltaTime * lastValue;
@@ -39,7 +34,7 @@ public class TimeStat {
     }
 
     public double getMean() {
-        double currentTime = core.getCurrentTime();
+        double currentTime = sim.currentTime();
 
         double activeTime = currentTime - startTime;
         if (activeTime <= 0) {
@@ -47,35 +42,30 @@ public class TimeStat {
         }
 
         double totalSum = sum + lastValue * (currentTime - lastChangeTime);
-
         return totalSum / activeTime;
     }
 
     public double getVariance() {
-        double currentTime = core.getCurrentTime();
-        if (currentTime == 0) return 0;
+        double currentTime = sim.currentTime();
+        double activeTime = currentTime - startTime;
+        if (activeTime <= 0) return 0;
 
         double totalSum = sum + lastValue * (currentTime - lastChangeTime);
         double totalSumSq = sumOfPowers + lastValue * lastValue * (currentTime - lastChangeTime);
 
-        double mean = totalSum / currentTime;
+        double mean = totalSum / activeTime;
 
-        return (totalSumSq / currentTime) - (mean * mean);
+        return (totalSumSq / activeTime) - (mean * mean);
     }
 
     public double getStdDev() {
-        return Math.sqrt(getVariance());
+        return Math.sqrt(Math.max(0, getVariance()));
     }
 
     public void clear(double currentTime) {
         this.sum = 0;
         this.sumOfPowers = 0;
-
         this.lastChangeTime = currentTime;
-
         this.startTime = currentTime;
     }
-
-
 }
-*/

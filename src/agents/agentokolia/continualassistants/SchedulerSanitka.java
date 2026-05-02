@@ -40,7 +40,7 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 		MySimulation sim = (MySimulation) mySim();
 		//pokus o animaciu
 		if (sim.animatorExists()) {
-			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.RED, 12);
+			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.YELLOW, 12);
 			anim.setPosition(300, 500);
 			sim.animator().register(anim);
 			newPatient.setAnimItem(anim);

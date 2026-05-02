@@ -36,9 +36,13 @@ public class ProcesOsetrovanie extends OSPABA.Process
 		}
 
 		if (pacient.getAnimItem() != null && pacient.getVisualAmbPosition() != null) {
-			pacient.getAnimItem().moveTo(sim.currentTime(), 0.5,
-					pacient.getVisualAmbPosition().x,
-					pacient.getVisualAmbPosition().y);
+			pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, pacient.getVisualAmbPosition().x , pacient.getVisualAmbPosition().y);
+		}
+
+		// --- PRIDAJ TÚTO POISTKU PRE FARBU PERSONÁLU ---
+		if (sim.animatorExists()) {
+			if (pacient.getAssignedDoctor() != null) pacient.getAssignedDoctor().getAnimItem().setColor(java.awt.Color.RED);
+			if (pacient.getAssignedNurse() != null) pacient.getAssignedNurse().getAnimItem().setColor(java.awt.Color.RED);
 		}
 
 		sim.log("OŠETRENIE: Pacient #" + pacient.getId() + " sa začal ošetrovať v ambulancii " + msg.getAmbulanceType() + ". Odhadovaný čas: " + String.format("%.1f", duration * 60) + " s.");
