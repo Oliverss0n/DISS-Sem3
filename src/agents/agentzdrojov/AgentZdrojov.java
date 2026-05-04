@@ -1,14 +1,14 @@
 package agents.agentzdrojov;
 
 import OSPABA.*;
+import simulation.*;
+import agents.agentzdrojov.continualassistants.*;
 import Statistics.Stat;
 import Statistics.TimeStat;
 import entities.Doctor;
 import entities.Nurse;
 import entities.Patient;
-import simulation.*;
 import OSPDataStruct.SimQueue;
-
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
@@ -36,6 +36,17 @@ public class AgentZdrojov extends OSPABA.Agent
 	private Stat waitingTimeWalkInStat = new Stat();
 	private TimeStat nurseUtilizationStat;
 	private TimeStat doctorUtilizationStat;
+	private Stat timeInSystemAmbStat = new Stat();
+	private Stat timeInSystemWalkInStat = new Stat();
+	private TimeStat roomAUtilizationStat;
+	private TimeStat roomBUtilizationStat;
+	private Stat entryWaitAmbStat = new Stat();
+	private Stat entryWaitWalkInStat = new Stat();
+	private TimeStat entryQueueLengthStat;
+
+	private Stat treatmentWaitAmbStat = new Stat();
+	private Stat treatmentWaitWalkInStat = new Stat();
+	private TimeStat treatmentQueueLengthStat;
 
 
 	public AgentZdrojov(int id, Simulation mySim, Agent parent)
@@ -47,6 +58,10 @@ public class AgentZdrojov extends OSPABA.Agent
 		queueExaminationB = createPatientQueue();
 		nurseUtilizationStat = new TimeStat(mySim);
 		doctorUtilizationStat = new TimeStat(mySim);
+		roomAUtilizationStat = new TimeStat(mySim);
+		roomBUtilizationStat = new TimeStat(mySim);
+		entryQueueLengthStat = new TimeStat(mySim);
+		treatmentQueueLengthStat = new TimeStat(mySim);
 	}
 
 	@Override
@@ -96,19 +111,31 @@ public class AgentZdrojov extends OSPABA.Agent
 
 		waitingTimeAmbulanceStat.clear();
 		waitingTimeWalkInStat.clear();
+		timeInSystemAmbStat.clear();
+		timeInSystemWalkInStat.clear();
 
 		nurseUtilizationStat.clear(mySim().currentTime());
 		doctorUtilizationStat.clear(mySim().currentTime());
+		roomAUtilizationStat.clear(mySim().currentTime());
+		roomBUtilizationStat.clear(mySim().currentTime());
+		entryWaitAmbStat.clear();
+		entryWaitWalkInStat.clear();
+		entryQueueLengthStat.clear(mySim().currentTime());
+
+		treatmentWaitAmbStat.clear();
+		treatmentWaitWalkInStat.clear();
+		treatmentQueueLengthStat.clear(mySim().currentTime());
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	private void init()
 	{
 		new ManagerZdrojov(Id.managerZdrojov, mySim(), this);
+		new SchedulerZahrievania(Id.schedulerZahrievania, mySim(), this);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
 		addOwnMessage(Mc.uvolniZdrojeVstup);
-		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
+		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.koniecZahrievania);
 	}
 	//meta! tag="end"
@@ -179,5 +206,22 @@ public class AgentZdrojov extends OSPABA.Agent
 	public TimeStat getDoctorUtilizationStat() {
 		return doctorUtilizationStat;
 	}
+	public Stat getTimeInSystemAmbStat() {
+		return timeInSystemAmbStat;
+	}
+
+	public Stat getTimeInSystemWalkInStat() {
+		return timeInSystemWalkInStat;
+	}
+
+	public TimeStat getRoomAUtilizationStat() { return roomAUtilizationStat; }
+	public TimeStat getRoomBUtilizationStat() { return roomBUtilizationStat; }
+	public Stat getEntryWaitAmbStat() { return entryWaitAmbStat; }
+	public Stat getEntryWaitWalkInStat() { return entryWaitWalkInStat; }
+	public TimeStat getEntryQueueLengthStat() { return entryQueueLengthStat; }
+
+	public Stat getTreatmentWaitAmbStat() { return treatmentWaitAmbStat; }
+	public Stat getTreatmentWaitWalkInStat() { return treatmentWaitWalkInStat; }
+	public TimeStat getTreatmentQueueLengthStat() { return treatmentQueueLengthStat; }
 
 }

@@ -28,14 +28,13 @@ public class ManagerZdrojov extends OSPABA.Manager
 			petriNet().clear();
 		}
 		MySimulation sim = (MySimulation) mySim();
-		double warmUp = sim.getWarmUpTime(); // <--- Tu si to Manažér vytiahne z MySimulation
+		double warmUp = sim.getWarmUpTime();
 
 		if (warmUp > 0.0) {
 			MyMessage msg = new MyMessage(sim);
-			msg.setCode(Mc.koniecZahrievania);
-			msg.setAddressee(myAgent());
-
-			//hold(warmUp, msg); // Uspí správu na 1 deň
+			msg.setCode(Mc.start); // Asistent sa VŽDY spúšťa kódom Mc.start
+			msg.setAddressee(myAgent().findAssistant(Id.schedulerZahrievania));
+			notice(msg); // Pošleme mu správu, nech začne odpočítavať
 		}
 	}
 
@@ -79,6 +78,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 		msg.getPatient().setStav("Čaká v rade na Vstup");
 
 		myAgent().getQueueEntrance().add(msg);
+		updateResourceUtilization();
 		checkQueues();
 	}
 
@@ -127,6 +127,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 		sim.odomkniVizualnuAmbulanciu(msg.getAmbulanceType(), msg.getPatient().getVisualAmbPosition());
 
+
 		checkQueues();
 		updateResourceUtilization();
 	}
@@ -137,115 +138,159 @@ public class ManagerZdrojov extends OSPABA.Manager
 		boolean changed = true;
 		MySimulation sim = (MySimulation) mySim();
 
+		// Zistíme, či je zapnutý Variant 2
+		boolean isVariant2 = (sim.getVariant() == 2);
+
 		while (changed) {
 			changed = false;
 
 			// 1. NAJPRV OŠETRENIE A
-			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty()) {
-				MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
-				myAgent().getQueueExaminationB().remove(msg);
+			// --- VARIANT 2 LOGIKA: Ak je zapnutý Variant 2, musíme mať voľné aspoň 2 sestry, inak Ošetrenie preskočíme ---
+			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty() && (!isVariant2 || myAgent().getFreeNurses().size() > 1)) {
 
-				Nurse sestra = myAgent().getFreeNurses().poll();
-				Doctor lekar = myAgent().getFreeDoctors().poll();
-				myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() - 1);
+				MyMessage peekMsg = (MyMessage) myAgent().getQueueExaminationA().peek();
 
-				msg.setAmbulanceType("A");
-				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
-				msg.getPatient().setStav("Ošetruje sa v Amb. A");
-
-				// --- ZBER ŠTATISTIKY ČAKANIA ---
-				// --- ZBER ŠTATISTIKY ČAKANIA ---
-				double waitingTime = mySim().currentTime() - msg.getPatient().getArrivalTimeBuilding();
-				if (msg.getPatient().isAmbulance()) {
-					myAgent().getWaitingTimeAmbulanceStat().add(waitingTime);
+				// --- VARIANT 1 LOGIKA ---
+				if (sim.getVariant() == 1 && myAgent().getFreeDoctors().size() == 1 && peekMsg.getPatient().getPriority() > 2) {
+					// Ochrana lekára - preskakujeme
 				} else {
-					myAgent().getWaitingTimeWalkInStat().add(waitingTime);
+					MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
+					myAgent().getQueueExaminationB().remove(msg);
+
+					double waitOsetrenie = mySim().currentTime() - msg.getPatient().getArrivalTimeQueueTreatment();
+					msg.getPatient().addWaitingTime(waitOsetrenie);
+
+
+					if (msg.getPatient().isAmbulance()) {
+						myAgent().getTreatmentWaitAmbStat().add(waitOsetrenie);
+					} else {
+						myAgent().getTreatmentWaitWalkInStat().add(waitOsetrenie);
+					}
+
+					double cakanie = mySim().currentTime() - msg.getPatient().getArrivalTime();
+					if (msg.getPatient().isAmbulance()) {
+						myAgent().getWaitingTimeAmbulanceStat().add(cakanie);
+					} else {
+						myAgent().getWaitingTimeWalkInStat().add(cakanie);
+					}
+
+					Nurse sestra = myAgent().getFreeNurses().poll();
+					Doctor lekar = myAgent().getFreeDoctors().poll();
+					myAgent().setFreeAmbulancesA(myAgent().getFreeAmbulancesA() - 1);
+
+					msg.setAmbulanceType("A");
+					msg.getPatient().setStartTimeTreatment(mySim().currentTime());
+					msg.getPatient().setStav("Ošetruje sa v Amb. A");
+
+					java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("A");
+					msg.getPatient().setVisualAmbPosition(pos);
+					msg.getPatient().setAssignedNurse(sestra);
+					msg.getPatient().setAssignedDoctor(lekar);
+
+					sim.obsadSestru(pos, sestra.getAnimItem());
+					sim.obsadLekara(pos, lekar.getAnimItem());
+
+					sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A.");
+					response(msg);
+
+					updateResourceUtilization();
+					changed = true;
+					continue;
 				}
-				// -------------------------------
-				// -------------------------------
-
-				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("A");
-				msg.getPatient().setVisualAmbPosition(pos);
-
-				msg.getPatient().setAssignedNurse(sestra);
-				msg.getPatient().setAssignedDoctor(lekar);
-
-				sim.obsadSestru(pos, sestra.getAnimItem());
-				sim.obsadLekara(pos, lekar.getAnimItem());
-
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu A. Čakal: " + String.format("%.1f", waitingTime) + "s.");
-				response(msg);
-
-				updateResourceUtilization(); // Aktualizácia vyťaženia
-				changed = true;
-				continue;
 			}
 
 			// 2. POTOM OŠETRENIE B
-			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty()) {
-				MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
-				myAgent().getQueueExaminationA().remove(msg);
+			// --- VARIANT 2 LOGIKA: Rovnaká ochrana 1 sestry pre Ošetrenie B ---
+			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty() && (!isVariant2 || myAgent().getFreeNurses().size() > 1)) {
 
-				Nurse sestra = myAgent().getFreeNurses().poll();
-				Doctor lekar = myAgent().getFreeDoctors().poll();
-				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
+				MyMessage peekMsg = (MyMessage) myAgent().getQueueExaminationB().peek();
 
-				msg.setAmbulanceType("B");
-				msg.getPatient().setStartTimeTreatment(mySim().currentTime());
-				msg.getPatient().setStav("Ošetruje sa v Amb. B");
-
-				// --- ZBER ŠTATISTIKY ČAKANIA ---
-				// --- ZBER ŠTATISTIKY ČAKANIA ---
-				double waitingTime = mySim().currentTime() - msg.getPatient().getArrivalTimeBuilding();
-				if (msg.getPatient().isAmbulance()) {
-					myAgent().getWaitingTimeAmbulanceStat().add(waitingTime);
+				// --- VARIANT 1 LOGIKA ---
+				if (sim.getVariant() == 1 && myAgent().getFreeDoctors().size() == 1 && peekMsg.getPatient().getPriority() > 2) {
+					// Ochrana lekára - preskakujeme
 				} else {
-					myAgent().getWaitingTimeWalkInStat().add(waitingTime);
+					MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
+					myAgent().getQueueExaminationA().remove(msg);
+
+					double waitOsetrenie = mySim().currentTime() - msg.getPatient().getArrivalTimeQueueTreatment();
+					msg.getPatient().addWaitingTime(waitOsetrenie);
+
+					if (msg.getPatient().isAmbulance()) {
+						myAgent().getTreatmentWaitAmbStat().add(waitOsetrenie);
+					} else {
+						myAgent().getTreatmentWaitWalkInStat().add(waitOsetrenie);
+					}
+
+					double cakanie = mySim().currentTime() - msg.getPatient().getArrivalTime();
+					if (msg.getPatient().isAmbulance()) {
+						myAgent().getWaitingTimeAmbulanceStat().add(cakanie);
+					} else {
+						myAgent().getWaitingTimeWalkInStat().add(cakanie);
+					}
+
+					Nurse sestra = myAgent().getFreeNurses().poll();
+					Doctor lekar = myAgent().getFreeDoctors().poll();
+					myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
+
+					msg.setAmbulanceType("B");
+					msg.getPatient().setStartTimeTreatment(mySim().currentTime());
+					msg.getPatient().setStav("Ošetruje sa v Amb. B");
+
+					java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
+					msg.getPatient().setVisualAmbPosition(pos);
+					msg.getPatient().setAssignedNurse(sestra);
+					msg.getPatient().setAssignedDoctor(lekar);
+
+					sim.obsadSestru(pos, sestra.getAnimItem());
+					sim.obsadLekara(pos, lekar.getAnimItem());
+
+					sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B.");
+					response(msg);
+
+					updateResourceUtilization();
+					changed = true;
+					continue;
 				}
-				// -------------------------------
-				// -------------------------------
-
-				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
-				msg.getPatient().setVisualAmbPosition(pos);
-
-				msg.getPatient().setAssignedNurse(sestra);
-				msg.getPatient().setAssignedDoctor(lekar);
-
-				sim.obsadSestru(pos, sestra.getAnimItem());
-				sim.obsadLekara(pos, lekar.getAnimItem());
-
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " (Priorita: " + msg.getPatient().getPriority() + ") dostal Ambulanciu typu B. Čakal: " + String.format("%.1f", waitingTime) + "s.");
-				response(msg);
-
-				updateResourceUtilization(); // Aktualizácia vyťaženia
-				changed = true;
-				continue;
 			}
 
-			// 3. AŽ NAKONIEC VSTUP (Ak zostali voľné sestry)
+			// 3. AŽ NAKONIEC VSTUP (Ak zostali voľné sestry a voľná Ambulancia B)
+			// Vstup si kedykoľvek vezme sestru, ak nejaká voľná ostala
 			if (!myAgent().getFreeNurses().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
+
+				double waitVstup = mySim().currentTime() - msg.getPatient().getArrivalTimeQueueExam();
+				msg.getPatient().addWaitingTime(waitVstup);
+
+				if (msg.getPatient().isAmbulance()) {
+					myAgent().getEntryWaitAmbStat().add(waitVstup);
+				} else {
+					myAgent().getEntryWaitWalkInStat().add(waitVstup);
+				}
 
 				Nurse sestra = myAgent().getFreeNurses().poll();
 				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
 				msg.getPatient().setStartTimeExam(mySim().currentTime());
-				msg.getPatient().setStav("Vyšetruje sa na Vstupnej prehliadke");
+				msg.getPatient().setStav("Vyšetruje sa na Vstupe (Amb. B)");
 
 				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
 				msg.getPatient().setVisualAmbPosition(pos);
-
 				msg.getPatient().setAssignedNurse(sestra);
 
 				sim.obsadSestru(pos, sestra.getAnimItem());
 
-				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru na Vstupné vyšetrenie.");
+				sim.log("ZDROJE: Pacient #" + msg.getPatient().getId() + " dostal Sestru a Amb. B na Vstupné vyšetrenie.");
 				response(msg);
 
-				updateResourceUtilization(); // Aktualizácia vyťaženia
+				updateResourceUtilization();
 				changed = true;
 			}
 		}
+	}
+	//meta! sender="SchedulerZahrievania", id="152", type="Finish"
+	public void processFinish(MessageForm message)
+	{
+		processKoniecZahrievania(message);
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -258,28 +303,29 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-			case Mc.reqZdrojeOsetrenie:
-				processReqZdrojeOsetrenie(message);
-				break;
+		case Mc.uvolniZdrojeOsetrenie:
+			processUvolniZdrojeOsetrenie(message);
+		break;
 
-			case Mc.uvolniZdrojeVstup:
-				processUvolniZdrojeVstup(message);
-				break;
+		case Mc.reqZdrojeVstup:
+			processReqZdrojeVstup(message);
+		break;
 
-			case Mc.reqZdrojeVstup:
-				processReqZdrojeVstup(message);
-				break;
+		case Mc.reqZdrojeOsetrenie:
+			processReqZdrojeOsetrenie(message);
+		break;
 
-			case Mc.uvolniZdrojeOsetrenie:
-				processUvolniZdrojeOsetrenie(message);
-				break;
-			case Mc.koniecZahrievania:
-				processKoniecZahrievania(message);
-			break;
+		case Mc.finish:
+			processFinish(message);
+		break;
 
-			default:
-				processDefault(message);
-				break;
+		case Mc.uvolniZdrojeVstup:
+			processUvolniZdrojeVstup(message);
+		break;
+
+		default:
+			processDefault(message);
+		break;
 		}
 	}
 	//meta! tag="end"
@@ -293,24 +339,51 @@ public class ManagerZdrojov extends OSPABA.Manager
 	private void updateResourceUtilization() {
 		MySimulation sim = (MySimulation) mySim();
 
-		// Výpočet
+		// Vyťaženie personálu
 		int busyNurses = sim.getNumNurses() - myAgent().getFreeNurses().size();
 		int busyDoctors = sim.getNumDoctors() - myAgent().getFreeDoctors().size();
-
-		// Zápis do lokálnej TimeStat štatistiky vnútri Agenta
 		myAgent().getNurseUtilizationStat().add(busyNurses);
 		myAgent().getDoctorUtilizationStat().add(busyDoctors);
+
+		// Vyťaženie ambulancií
+		int busyAmbA = 5 - myAgent().getFreeAmbulancesA();
+		int busyAmbB = 7 - myAgent().getFreeAmbulancesB();
+		myAgent().getRoomAUtilizationStat().add(busyAmbA);
+		myAgent().getRoomBUtilizationStat().add(busyAmbB);
+
+		// Rad na Vstup
+		myAgent().getEntryQueueLengthStat().add(myAgent().getQueueEntrance().size());
+
+		// Rad na Ošetrenie (Unikátni pacienti)
+		//vygenerovanie pomocou AI - sluzi na unikatne zaratanie pacienta, kedze je v 2 radoch naraz
+		java.util.HashSet<Integer> uniqueWaitingPatients = new java.util.HashSet<>();
+		for (Object obj : myAgent().getQueueExaminationA()) {
+			uniqueWaitingPatients.add(((MyMessage) obj).getPatient().getId());
+		}
+		for (Object obj : myAgent().getQueueExaminationB()) {
+			uniqueWaitingPatients.add(((MyMessage) obj).getPatient().getId());
+		}
+
+		myAgent().getTreatmentQueueLengthStat().add(uniqueWaitingPatients.size());
+		// TU už nič ďalšie netreba, tú duplicitu vymaž.
 	}
 
 	private void processKoniecZahrievania(MessageForm message) {
-		// Tu zmažeme všetky štatistiky nazbierané počas "zahrievacieho" dňa
 		myAgent().getWaitingTimeAmbulanceStat().clear();
 		myAgent().getWaitingTimeWalkInStat().clear();
+		myAgent().getEntryWaitAmbStat().clear();        // NOVÉ
+		myAgent().getEntryWaitWalkInStat().clear();     // NOVÉ
+		myAgent().getTreatmentWaitAmbStat().clear();    // NOVÉ
+		myAgent().getTreatmentWaitWalkInStat().clear(); // NOVÉ
 
-		// Pri TimeStat nezabudni, že potrebujú aktuálny čas
-		myAgent().getNurseUtilizationStat().clear(mySim().currentTime());
-		myAgent().getDoctorUtilizationStat().clear(mySim().currentTime());
+		// 2. Časovo-vážené štatistiky (TimeStat) - vyžadujú currentTime()
+		double now = mySim().currentTime();
+		myAgent().getNurseUtilizationStat().clear(now);
+		myAgent().getDoctorUtilizationStat().clear(now);
+		myAgent().getRoomAUtilizationStat().clear(now);
+		myAgent().getRoomBUtilizationStat().clear(now);
+		myAgent().getEntryQueueLengthStat().clear(now);     // NOVÉ
+		myAgent().getTreatmentQueueLengthStat().clear(now); // NOVÉ
 	}
 
 }
-

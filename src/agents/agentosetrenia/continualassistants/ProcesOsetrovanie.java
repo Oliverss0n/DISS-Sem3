@@ -64,23 +64,23 @@ public class ProcesOsetrovanie extends OSPABA.Process
 	{
 		switch (message.code())
 		{
-		case Mc.start:
-			processStart(message);
-		break;
+			case Mc.start:
+				processStart(message);
+				break;
 
-		case Mc.koniecZdrzania:
-			/*vygenerovala AI, pretoze mi nemizli*/
-			MySimulation sim = (MySimulation) mySim();
-			entities.Patient pacient = ((MyMessage) message).getPatient();
-			if (pacient.getAnimItem() != null) {
-				// Pošleme pacienta preč z mapy
-				pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
-			}
-			assistantFinished(message);
-		break;
-		default:
-			processDefault(message);
-		break;
+			case Mc.koniecZdrzania:
+				/*vygenerovala AI, pretoze mi nemizli*/
+				MySimulation sim = (MySimulation) mySim();
+				entities.Patient pacient = ((MyMessage) message).getPatient();
+				if (pacient.getAnimItem() != null) {
+					// Pošleme pacienta preč z mapy
+					pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
+				}
+				assistantFinished(message);
+				break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"

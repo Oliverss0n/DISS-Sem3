@@ -66,6 +66,14 @@ public class ManagerUrgentu extends OSPABA.Manager
 	public void processFinishProcessPresunOdchod(MessageForm message) {
 		MyMessage msg = (MyMessage) message;
 		MySimulation sim = (MySimulation) mySim();
+		double totalTime = sim.currentTime() - msg.getPatient().getArrivalTime();
+		if (msg.getPatient().isAmbulance()) {
+			sim.agentZdrojov().getTimeInSystemAmbStat().add(totalTime);
+		} else {
+			sim.agentZdrojov().getTimeInSystemWalkInStat().add(totalTime);
+		}
+
+		sim.incrementPatientCount(msg.getPatient().isAmbulance());
 
 		sim.removePatient(msg.getPatient());
 		sim.log("ODCHOD: Pacient #" + msg.getPatient().getId() + " úspešne opúšťa nemocnicu!");
@@ -150,11 +158,11 @@ public class ManagerUrgentu extends OSPABA.Manager
 				switch (message.sender().id()) {
 					case Id.agentVstupnehoVystrenia:
 						processReqZdrojeVstupAgentVstupnehoVystrenia(message);
-					break;
+						break;
 
 					case Id.agentZdrojov:
 						processReqZdrojeVstupAgentZdrojov(message);
-					break;
+						break;
 				}
 				break;
 
@@ -162,37 +170,37 @@ public class ManagerUrgentu extends OSPABA.Manager
 				switch (message.sender().id()) {
 					case Id.agentZdrojov:
 						processReqZdrojeOsetrenieAgentZdrojov(message);
-					break;
+						break;
 
 					case Id.agentOsetrenia:
 						processReqZdrojeOsetrenieAgentOsetrenia(message);
-					break;
+						break;
 				}
 				break;
 
 			case Mc.uvolniZdrojeOsetrenie:
 				processUvolniZdrojeOsetrenie(message);
-			break;
+				break;
 
 			case Mc.novyPacient:
 				processNovyPacient(message);
-			break;
+				break;
 
 			case Mc.uvolniZdrojeVstup:
 				processUvolniZdrojeVstup(message);
-			break;
+				break;
 
 			case Mc.odchodPacienta:
 				processOdchodPacienta(message);
-			break;
+				break;
 
 			case Mc.presunNaOsetrenie:
 				processPresunNaOsetrenie(message);
-			break;
+				break;
 
 			default:
 				processDefault(message);
-			break;
+				break;
 		}
 	}
 	//meta! tag="end"

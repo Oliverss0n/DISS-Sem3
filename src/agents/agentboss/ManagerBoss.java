@@ -58,17 +58,17 @@ public class ManagerBoss extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.odchodPacienta:
-			processOdchodPacienta(message);
-		break;
+			case Mc.odchodPacienta:
+				processOdchodPacienta(message);
+				break;
 
-		case Mc.novyPacient:
-			processNovyPacient(message);
-		break;
+			case Mc.novyPacient:
+				processNovyPacient(message);
+				break;
 
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"

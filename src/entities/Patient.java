@@ -27,11 +27,16 @@ public class Patient implements Comparable<Patient> {
     private Nurse assignedNurse;
     private Doctor assignedDoctor;
 
+    private final double arrivalTime;
+    private double totalWaitingTime = 0.0;
+
+
     public Patient(boolean isAmbulance, double currentTime) {
         this.id = ++idCounter;
         this.isAmbulance = isAmbulance;
         this.arrivalTimeBuilding = currentTime;
         this.priority = -1;
+        this.arrivalTime = currentTime;
     }
 
 
@@ -100,6 +105,9 @@ public class Patient implements Comparable<Patient> {
         this.stav = stav;
     }
 
+    public double getArrivalTime() {
+        return arrivalTime;
+    }
 
     //navrhla AI
     @Override
@@ -157,5 +165,13 @@ public class Patient implements Comparable<Patient> {
 
     public void setAssignedDoctor(Doctor assignedDoctor) {
         this.assignedDoctor = assignedDoctor;
+    }
+
+    public void addWaitingTime(double time) {
+        this.totalWaitingTime += time;
+    }
+
+    public double getTotalWaitingTime() {
+        return totalWaitingTime;
     }
 }

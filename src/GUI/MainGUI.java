@@ -29,6 +29,8 @@ import OSPAnimator.AnimQueue;
 
 public class MainGUI extends JFrame implements ISimDelegate {
 
+
+    //private double WARMUP = 86400.0;
     // --- Simulačné jadro a vlákno ---
     private MySimulation sim;
     private Thread simThread;
@@ -41,13 +43,21 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JTextField tfReplications, tfDoctors, tfNurses;
 
     // --- Štatistiky ---
-    // --- Štatistiky ---
     private JLabel lblCurQueueEntrance, lblCurQueueExam, lblCurFreeDoctors, lblCurFreeNurses;
     // ZMENENÉ NÁZVY A PRIDANÉ NOVÉ LABELy PRE VYŤAŽENIE:
     private JLabel lblGlobReplications, lblGlobAvgWaitAmbulance, lblGlobAvgWaitWalkIn, lblGlobUtilNurses, lblGlobUtilDoctors;
+    private JLabel lblGlobUtilRoomA, lblGlobUtilRoomB;
+    private JLabel lblGlobTotalPatients, lblGlobTotalWalkIn, lblGlobTotalAmb;
+    private JLabel lblGlobEntryWaitAmb, lblGlobEntryWaitWalk, lblGlobEntryQueue;
+
+    private JLabel lblGlobTreatWaitAmb, lblGlobTreatWaitWalk, lblGlobTreatQueue;
+
     // --- Tabuľka ---
     private DefaultTableModel tmPatients;
     private JTable tblPatients;
+    private JLabel lblGlobTimeInSysAmb, lblGlobTimeInSysWalkIn;
+
+
 
     // --- Logovanie ---
     private JTextArea taLogs;
@@ -66,6 +76,22 @@ public class MainGUI extends JFrame implements ISimDelegate {
     //zahrievanie:
     private XYSeries eyeballingSeries;
     private JTextField tfEyeballingStep, tfEyeballingReps;
+
+    // --- PREMENNÉ PRE ANALÝZU CITLIVOSTI ---
+    private XYSeries seriesWaitAmb, seriesWaitWalkIn;
+
+    // Horný panel (Rýchly graf)
+    private JTextField tfGraphStart, tfGraphEnd, tfGraphFixed, tfGraphReps;
+    private JComboBox<String> cbGraphTyp;
+    private JButton btnDrawGraph;
+
+    // Dolný panel (Hromadný CSV export)
+    private JTextField tfExpDocStart, tfExpDocEnd, tfExpNursStart, tfExpNursEnd, tfExpReps;
+    private JButton btnExperiment;
+
+    private JComboBox<String> cbVariantSelect;
+
+
 
     // --- Štatistiky ---
     public MainGUI() {
@@ -125,6 +151,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Hlavná Simulácia", mainPanel);
         tabbedPane.addTab("Graf Zahrievania (Eyeballing)", buildWarmUpPanel());
+        tabbedPane.addTab("Analýza Citlivosti", buildSensitivityPanel());
 
         add(tabbedPane);
         setVisible(true);
@@ -135,11 +162,16 @@ public class MainGUI extends JFrame implements ISimDelegate {
         p.setBorder(BorderFactory.createTitledBorder("Ovládanie"));
 
         tfReplications = new JTextField("10", 5);
-        tfDoctors = new JTextField("5", 3);
-        tfNurses = new JTextField("5", 3);
+        tfDoctors = new JTextField("6", 3);
+        tfNurses = new JTextField("8", 3);
 
         cbVisualMode = new JCheckBox("Vizuálny režim", true);
         cbAnimation = new JCheckBox("Animácia", false);
+
+        String[] varianty = {"0 - Základný model", "1 - Ochrana posl. lekára", "2 - Dedikovaná sestra"};
+        cbVariantSelect = new JComboBox<>(varianty);
+        p.add(new JLabel("Variant:"));
+        p.add(cbVariantSelect);
 
         speedSlider = new JSlider(1, 100, 10);
         lblSpeedDisplay = new JLabel("Rýchlosť: 1.0x");
@@ -267,6 +299,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         eyeballingSim.setNumDoctors(Integer.parseInt(tfDoctors.getText()));
         eyeballingSim.setNumNurses(Integer.parseInt(tfNurses.getText()));
 
+        eyeballingSim.setVariant(cbVariantSelect.getSelectedIndex());
         // TOTO JE TEN TRIK:
         // Povieme OSPABE: Každých 'step' (3600) sekúnd zavolaj refresh() a zastav sa na smiešnu 0.001 sekundy.
         // Takto jadro beží takmer rýchlosťou turbomódu, ale GUI vie pravidelne a presne zbierať dáta.
@@ -342,30 +375,271 @@ public class MainGUI extends JFrame implements ISimDelegate {
         });
     }
 
+    private JPanel buildSensitivityPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        String[] moznosti = {"Meniť počet LEKÁROV (Sestry pevné)", "Meniť počet SESTIER (Lekári pevní)"};
+
+        // --- HORNÝ PANEL (Rýchly graf) ---
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenia grafu (rýchly náhľad)"));
+
+        cbGraphTyp = new JComboBox<>(moznosti);
+        tfGraphStart = new JTextField("3", 3);
+        tfGraphEnd = new JTextField("12", 3);
+        tfGraphFixed = new JTextField("5", 3);
+        tfGraphReps = new JTextField("10", 4);
+        btnDrawGraph = new JButton("Vykresliť graf");
+
+        topPanel.add(new JLabel("Režim:")); topPanel.add(cbGraphTyp);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(new JLabel("Od:")); topPanel.add(tfGraphStart);
+        topPanel.add(new JLabel("Do:")); topPanel.add(tfGraphEnd);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(new JLabel("Pevná hodnota:")); topPanel.add(tfGraphFixed);
+        topPanel.add(Box.createHorizontalStrut(10));
+        topPanel.add(new JLabel("Replikácie na bod:")); topPanel.add(tfGraphReps);
+        topPanel.add(Box.createHorizontalStrut(15));
+        topPanel.add(btnDrawGraph);
+
+        btnDrawGraph.addActionListener(e -> runGraphExperiment());
+
+        // --- SPODNÝ PANEL (Hromadný export) ---
+        JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        exportPanel.setBorder(BorderFactory.createTitledBorder("Hromadný export (Detailná analýza do CSV)"));
+
+        tfExpDocStart = new JTextField("2", 3);
+        tfExpDocEnd = new JTextField("6", 3);
+        tfExpNursStart = new JTextField("3", 3);
+        tfExpNursEnd = new JTextField("8", 3);
+        tfExpReps = new JTextField("50", 4); // Odporúčam začať s 50 rep. pre rýchlejší test
+        btnExperiment = new JButton("Spustiť Grid Search (CSV)");
+        btnExperiment.setBackground(new Color(230, 240, 255));
+
+        exportPanel.add(new JLabel("Lekári Od:")); exportPanel.add(tfExpDocStart);
+        exportPanel.add(new JLabel("Do:")); exportPanel.add(tfExpDocEnd);
+        exportPanel.add(Box.createHorizontalStrut(10));
+        exportPanel.add(new JLabel("Sestry Od:")); exportPanel.add(tfExpNursStart);
+        exportPanel.add(new JLabel("Do:")); exportPanel.add(tfExpNursEnd);
+        exportPanel.add(Box.createHorizontalStrut(10));
+        exportPanel.add(new JLabel("Replikácie:")); exportPanel.add(tfExpReps);
+        exportPanel.add(Box.createHorizontalStrut(15));
+        exportPanel.add(btnExperiment);
+
+        btnExperiment.addActionListener(e -> runExportExperiment());
+
+        // --- ZLOŽENIE OVLÁDACÍCH PANELOV ---
+        JPanel combinedTop = new JPanel(new GridLayout(2, 1));
+        combinedTop.add(topPanel);
+        combinedTop.add(exportPanel);
+        panel.add(combinedTop, BorderLayout.NORTH);
+
+        // --- GRAF ---
+        seriesWaitAmb = new XYSeries("Priemerný čas - Sanitky (min)");
+        seriesWaitWalkIn = new XYSeries("Priemerný čas - Peší (min)");
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        dataset.addSeries(seriesWaitAmb);
+        dataset.addSeries(seriesWaitWalkIn);
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Závislosť času čakania od počtu personálu",
+                "Počet zamestnancov (Menený parameter)",
+                "Priemerný čas čakania (Minúty)",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true, true, false
+        );
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        panel.add(chartPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void runGraphExperiment() {
+        btnDrawGraph.setEnabled(false);
+        btnExperiment.setEnabled(false);
+        btnStart.setEnabled(false);
+        seriesWaitAmb.clear();
+        seriesWaitWalkIn.clear();
+
+        int startVal = Integer.parseInt(tfGraphStart.getText());
+        int endVal = Integer.parseInt(tfGraphEnd.getText());
+        int fixedVal = Integer.parseInt(tfGraphFixed.getText());
+        int reps = Integer.parseInt(tfGraphReps.getText());
+        boolean menimeLekarov = cbGraphTyp.getSelectedIndex() == 0;
+
+        new Thread(() -> {
+            for (int i = startVal; i <= endVal; i++) {
+                MySimulation expSim = new MySimulation();
+                expSim.setVariant(cbVariantSelect.getSelectedIndex());
+                if (menimeLekarov) {
+                    expSim.setNumDoctors(i);
+                    expSim.setNumNurses(fixedVal);
+                } else {
+                    expSim.setNumDoctors(fixedVal);
+                    expSim.setNumNurses(i);
+                }
+                //expSim.setWarmUpTime(WARM_UP);
+                expSim.setSimSpeed(0, 0);
+                expSim.setMaxSimSpeed();
+
+                expSim.simulate(reps, 2505600.0);
+
+                double avgAmbMins = expSim.getGlobalWaitAmbStat().getMean() / 60.0;
+                double avgWalkMins = expSim.getGlobalWaitWalkInStat().getMean() / 60.0;
+
+                final int x = i;
+                SwingUtilities.invokeLater(() -> {
+                    seriesWaitAmb.add(x, avgAmbMins);
+                    seriesWaitWalkIn.add(x, avgWalkMins);
+                });
+            }
+            SwingUtilities.invokeLater(() -> {
+                btnDrawGraph.setEnabled(true);
+                btnExperiment.setEnabled(true);
+                btnStart.setEnabled(true);
+            });
+        }).start();
+    }
+
+    private void runExportExperiment() {
+        btnDrawGraph.setEnabled(false);
+        btnExperiment.setEnabled(false);
+        btnStart.setEnabled(false);
+        seriesWaitAmb.clear();
+        seriesWaitWalkIn.clear();
+
+        int docStart = Integer.parseInt(tfExpDocStart.getText());
+        int docEnd = Integer.parseInt(tfExpDocEnd.getText());
+        int nursStart = Integer.parseInt(tfExpNursStart.getText());
+        int nursEnd = Integer.parseInt(tfExpNursEnd.getText());
+        int reps = Integer.parseInt(tfExpReps.getText());
+
+        new Thread(() -> {
+            String filename = "grid_search_vysledky.csv";
+
+            try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(filename))) {
+
+                // Hlavička CSV s novým stĺpcom pre celkový súčet personálu
+                writer.println("Lekari;Sestry;Personal Spolu;Cakanie Sanitky (min);Cakanie Pesi (min);Vytazenie Lekari (%);Vytazenie Sestry (%);Splna zadanie?");
+
+                int minSpolu = Integer.MAX_VALUE;
+                int bestDocs = -1;
+                int bestNurs = -1;
+
+                // 2 CYKLY: Prechádzame všetky kombinácie lekárov a sestier
+                for (int d = docStart; d <= docEnd; d++) {
+                    for (int s = nursStart; s <= nursEnd; s++) {
+
+                        MySimulation expSim = new MySimulation();
+                        expSim.setVariant(cbVariantSelect.getSelectedIndex());
+                        expSim.setNumDoctors(d);
+                        expSim.setNumNurses(s);
+                        //expSim.setWarmUpTime(WARMUP);
+                        expSim.setSimSpeed(0, 0);
+                        expSim.setMaxSimSpeed();
+
+                        expSim.simulate(reps, 2505600.0); // 28 dní
+
+                        double avgAmbMins = expSim.getGlobalWaitAmbStat().getMean() / 60.0;
+                        double avgWalkMins = expSim.getGlobalWaitWalkInStat().getMean() / 60.0;
+                        double utilDoc = (expSim.getNumDoctors() > 0) ? (expSim.getGlobalUtilDoctorsStat().getMean() / expSim.getNumDoctors()) * 100 : 0;
+                        double utilNur = (expSim.getNumNurses() > 0) ? (expSim.getGlobalUtilNursesStat().getMean() / expSim.getNumNurses()) * 100 : 0;
+
+                        boolean splnaPodmienku = (avgAmbMins <= 15.0) && (avgWalkMins < 30.0);
+                        String vysledokPodmienky = splnaPodmienku ? "PRAVDA" : "NEPRAVDA";
+                        int personalSpolu = d + s;
+
+                        // Ak splní podmienku a použili sme menej personálu ako doteraz, zapamätáme si to
+                        if (splnaPodmienku && personalSpolu < minSpolu) {
+                            minSpolu = personalSpolu;
+                            bestDocs = d;
+                            bestNurs = s;
+                        }
+
+                        // Zápis do CSV
+                        String csvLine = String.format(java.util.Locale.US, "%d;%d;%d;%.2f;%.2f;%.2f;%.2f;%s",
+                                d, s, personalSpolu, avgAmbMins, avgWalkMins, utilDoc, utilNur, vysledokPodmienky).replace('.', ',');
+
+                        writer.println(csvLine);
+
+                        // Nepovinné: Aktualizuj graf čisto vizuálne pre nejaký progres (len súčet personálu)
+                        final int sum = personalSpolu;
+                        SwingUtilities.invokeLater(() -> {
+                            seriesWaitAmb.addOrUpdate((Number) sum, avgAmbMins);
+                            seriesWaitWalkIn.addOrUpdate((Number) sum, avgWalkMins);
+                        });
+                    }
+                }
+
+                // Vytvorenie finálnej hlášky podľa toho, či sa našlo riešenie
+                String finalMsg;
+                if (bestDocs != -1) {
+                    finalMsg = "Grid Search bol dokončený!\n\n" +
+                            "Najlepšia zistená konfigurácia:\n" +
+                            "Lekári: " + bestDocs + "\n" +
+                            "Sestry: " + bestNurs + "\n\n" +
+                            "Všetky dáta nájdete v súbore: " + filename;
+                } else {
+                    finalMsg = "Grid Search dokončený!\n\nŽiadna z testovaných kombinácií NESPLNILA podmienky.\nSkúste zvýšiť počty personálu.";
+                }
+
+                SwingUtilities.invokeLater(() -> {
+                    btnDrawGraph.setEnabled(true);
+                    btnExperiment.setEnabled(true);
+                    btnStart.setEnabled(true);
+                    JOptionPane.showMessageDialog(MainGUI.this, finalMsg);
+                });
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
     private void updateGlobalStatsGUI() {
-        // Tu ťaháme údaje z GLOBÁLNYCH štatistík z MySimulation
-        double waitAmbMean = sim.getGlobalWaitAmbStat().getMean();
-        double waitAmbLow = sim.getGlobalWaitAmbStat().getConfidenceIntervalLower();
-        double waitAmbHigh = sim.getGlobalWaitAmbStat().getConfidenceIntervalUpper();
-        lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.1fs <%.1f, %.1f>", waitAmbMean, waitAmbLow, waitAmbHigh));
+        if (sim == null) return;
 
-        double waitWalkInMean = sim.getGlobalWaitWalkInStat().getMean();
-        double waitWalkInLow = sim.getGlobalWaitWalkInStat().getConfidenceIntervalLower();
-        double waitWalkInHigh = sim.getGlobalWaitWalkInStat().getConfidenceIntervalUpper();
-        lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.1fs <%.1f, %.1f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
+        // Update počítadla replikácií
+        lblGlobReplications.setText("Replications: " + sim.currentReplication());
 
-        double utilNursesMean = sim.getGlobalUtilNursesStat().getMean();
-        double utilNursesPct = (sim.getNumNurses() > 0) ? (utilNursesMean / sim.getNumNurses()) * 100 : 0;
-        lblGlobUtilNurses.setText(String.format("Nurses Util.: %.2f%% (%.1f/%d)", utilNursesPct, utilNursesMean, sim.getNumNurses()));
+        // --- 1. BLOK: ČASY (Všetko v minútach s IS) ---
+        lblGlobTimeInSysAmb.setText(String.format("Cas v systeme (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalTimeInSystemAmbStat().getMean() / 60.0, sim.getGlobalTimeInSystemAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTimeInSystemAmbStat().getConfidenceIntervalUpper() / 60.0));
+        lblGlobTimeInSysWalkIn.setText(String.format("Cas v systeme (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalTimeInSystemWalkInStat().getMean() / 60.0, sim.getGlobalTimeInSystemWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTimeInSystemWalkInStat().getConfidenceIntervalUpper() / 60.0));
 
-        double utilDoctorsMean = sim.getGlobalUtilDoctorsStat().getMean();
-        double utilDoctorsPct = (sim.getNumDoctors() > 0) ? (utilDoctorsMean / sim.getNumDoctors()) * 100 : 0;
-        lblGlobUtilDoctors.setText(String.format("Doctors Util.: %.2f%% (%.1f/%d)", utilDoctorsPct, utilDoctorsMean, sim.getNumDoctors()));
+        lblGlobAvgWaitAmbulance.setText(String.format("Celkove cakanie (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalWaitAmbStat().getMean() / 60.0, sim.getGlobalWaitAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalWaitAmbStat().getConfidenceIntervalUpper() / 60.0));
+        lblGlobAvgWaitWalkIn.setText(String.format("Celkove cakanie (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalWaitWalkInStat().getMean() / 60.0, sim.getGlobalWaitWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalWaitWalkInStat().getConfidenceIntervalUpper() / 60.0));
+
+        lblGlobEntryWaitAmb.setText(String.format("Cakanie VSTUP. (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalEntryWaitAmbStat().getMean() / 60.0, sim.getGlobalEntryWaitAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalEntryWaitAmbStat().getConfidenceIntervalUpper() / 60.0));
+        lblGlobEntryWaitWalk.setText(String.format("Cakanie VSTUP. (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalEntryWaitWalkInStat().getMean() / 60.0, sim.getGlobalEntryWaitWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalEntryWaitWalkInStat().getConfidenceIntervalUpper() / 60.0));
+
+        lblGlobTreatWaitAmb.setText(String.format("Cakanie OŠETRENIE (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalTreatmentWaitAmbStat().getMean() / 60.0, sim.getGlobalTreatmentWaitAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTreatmentWaitAmbStat().getConfidenceIntervalUpper() / 60.0));
+        lblGlobTreatWaitWalk.setText(String.format("Cakanie OŠETRENIE (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalTreatmentWaitWalkInStat().getMean() / 60.0, sim.getGlobalTreatmentWaitWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTreatmentWaitWalkInStat().getConfidenceIntervalUpper() / 60.0));
+
+        // --- 2. BLOK: RADY (v osobách s IS) ---
+        lblGlobEntryQueue.setText(String.format("Rad Vstup (osoby): %.2f <%.2f, %.2f>", sim.getGlobalEntryQueueLengthStat().getMean(), sim.getGlobalEntryQueueLengthStat().getConfidenceIntervalLower(), sim.getGlobalEntryQueueLengthStat().getConfidenceIntervalUpper()));
+        lblGlobTreatQueue.setText(String.format("Rad Ošetrenie (osoby): %.2f <%.2f, %.2f>", sim.getGlobalTreatmentQueueLengthStat().getMean(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalLower(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalUpper()));
+
+        // --- 3. BLOK: VYŤAŽENOSŤ (% s IS) ---
+        double uNur = sim.getGlobalUtilNursesStat().getMean();
+        lblGlobUtilNurses.setText(String.format("Sestry: %.2f%% <%.2f, %.2f>", (sim.getNumNurses() > 0) ? (uNur / sim.getNumNurses()) * 100 : 0, sim.getGlobalUtilNursesStat().getConfidenceIntervalLower(), sim.getGlobalUtilNursesStat().getConfidenceIntervalUpper()));
+
+        double uDoc = sim.getGlobalUtilDoctorsStat().getMean();
+        lblGlobUtilDoctors.setText(String.format("Lekári: %.2f%% <%.2f, %.2f>", (sim.getNumDoctors() > 0) ? (uDoc / sim.getNumDoctors()) * 100 : 0, sim.getGlobalUtilDoctorsStat().getConfidenceIntervalLower(), sim.getGlobalUtilDoctorsStat().getConfidenceIntervalUpper()));
+
+        lblGlobUtilRoomA.setText(String.format("Amb A: %.2f%% <%.2f, %.2f>", (sim.getGlobalRoomAUtilStat().getMean() / 5.0) * 100, sim.getGlobalRoomAUtilStat().getConfidenceIntervalLower(), sim.getGlobalRoomAUtilStat().getConfidenceIntervalUpper()));
+        lblGlobUtilRoomB.setText(String.format("Amb B: %.2f%% <%.2f, %.2f>", (sim.getGlobalRoomBUtilStat().getMean() / 7.0) * 100, sim.getGlobalRoomBUtilStat().getConfidenceIntervalLower(), sim.getGlobalRoomBUtilStat().getConfidenceIntervalUpper()));
+
+        // --- 4. BLOK: PRIECHODNOSŤ (v osobách s IS) ---
+        lblGlobTotalPatients.setText(String.format("Vybavení pacienti: %.1f <%.1f, %.1f>", sim.getGlobalTotalPatientsStat().getMean(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalLower(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalUpper()));
+        lblGlobTotalWalkIn.setText(String.format(" - Z toho Peší: %.1f <%.1f, %.1f>", sim.getGlobalTotalWalkInStat().getMean(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalLower(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalUpper()));
+        lblGlobTotalAmb.setText(String.format(" - Z toho Sanitky: %.1f <%.1f, %.1f>", sim.getGlobalTotalAmbStat().getMean(), sim.getGlobalTotalAmbStat().getConfidenceIntervalLower(), sim.getGlobalTotalAmbStat().getConfidenceIntervalUpper()));
     }
 
     private JPanel buildStatsPanel() {
         JPanel p = new JPanel(new GridLayout(1, 2, 10, 10));
 
+        // --- AKTUÁLNY STAV (Ľavá strana - ponechaná z tvojho kódu) ---
         JPanel curPanel = new JPanel(new GridLayout(6, 1));
         curPanel.setBorder(BorderFactory.createTitledBorder("Aktuálny stav"));
         lblCurQueueEntrance = new JLabel("Rad na vstup: 0");
@@ -378,23 +652,62 @@ public class MainGUI extends JFrame implements ISimDelegate {
         curPanel.add(lblCurFreeDoctors); curPanel.add(lblCurFreeNurses);
         curPanel.add(lblAmbAStatus); curPanel.add(lblAmbBStatus);
 
-        JPanel globPanel = new JPanel(new GridLayout(5, 1)); // Zmena na 5 riadkov
-        globPanel.setBorder(BorderFactory.createTitledBorder("Averages (Statistics)"));
+        // --- GLOBÁLNE ŠTATISTIKY (Pravá strana - mriežka 2x2) ---
+        JPanel mainGlobPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        mainGlobPanel.setBorder(BorderFactory.createTitledBorder("Globálne štatistiky"));
 
-        lblGlobReplications = new JLabel("Replications: 0");
-        lblGlobAvgWaitAmbulance = new JLabel("Wait (Ambulance): 0.0s");
-        lblGlobAvgWaitWalkIn = new JLabel("Wait (Walk-in): 0.0s");
-        lblGlobUtilNurses = new JLabel("Nurses Util.: 0.0%");
-        lblGlobUtilDoctors = new JLabel("Doctors Util.: 0.0%");
+        // BLOK 1: ČASY
+        JPanel pnlTimes = new JPanel(new GridLayout(0, 1));
+        pnlTimes.setBorder(BorderFactory.createTitledBorder("Časy (minúty)"));
+        lblGlobTimeInSysAmb = new JLabel("Systém (Sanitky): -");
+        lblGlobTimeInSysWalkIn = new JLabel("Systém (Peší): -");
+        lblGlobAvgWaitAmbulance = new JLabel("Celk. čak. (Sanitky): -");
+        lblGlobAvgWaitWalkIn = new JLabel("Celk. čak. (Peší): -");
+        lblGlobEntryWaitAmb = new JLabel("Čak. VSTUP (Sanitky): -");
+        lblGlobEntryWaitWalk = new JLabel("Čak. VSTUP (Peší): -");
+        lblGlobTreatWaitAmb = new JLabel("Čak. OŠETRENIE (Sanitky): -");
+        lblGlobTreatWaitWalk = new JLabel("Čak. OŠETRENIE (Peší): -");
+        pnlTimes.add(lblGlobTimeInSysAmb); pnlTimes.add(lblGlobTimeInSysWalkIn);
+        pnlTimes.add(lblGlobAvgWaitAmbulance); pnlTimes.add(lblGlobAvgWaitWalkIn);
+        pnlTimes.add(lblGlobEntryWaitAmb); pnlTimes.add(lblGlobEntryWaitWalk);
+        pnlTimes.add(lblGlobTreatWaitAmb); pnlTimes.add(lblGlobTreatWaitWalk);
 
-        globPanel.add(lblGlobReplications);
-        globPanel.add(lblGlobAvgWaitAmbulance);
-        globPanel.add(lblGlobAvgWaitWalkIn);
-        globPanel.add(lblGlobUtilNurses);
-        globPanel.add(lblGlobUtilDoctors);
+        // BLOK 2: RADY + INFO
+        JPanel pnlQueues = new JPanel(new GridLayout(0, 1));
+        pnlQueues.setBorder(BorderFactory.createTitledBorder("Rady a Info"));
+        lblGlobReplications = new JLabel("Replikácie: 0");
+        lblGlobEntryQueue = new JLabel("Rad na Vstup: -");
+        lblGlobTreatQueue = new JLabel("Rad na Ošetrenie: -");
+        pnlQueues.add(lblGlobReplications);
+        pnlQueues.add(lblGlobEntryQueue);
+        pnlQueues.add(lblGlobTreatQueue);
+
+        // BLOK 3: VYŤAŽENOSŤ
+        JPanel pnlUtils = new JPanel(new GridLayout(0, 1));
+        pnlUtils.setBorder(BorderFactory.createTitledBorder("Vyťaženosť (%)"));
+        lblGlobUtilNurses = new JLabel("Sestry: -");
+        lblGlobUtilDoctors = new JLabel("Lekári: -");
+        lblGlobUtilRoomA = new JLabel("Amb A (Ošetrenie): -");
+        lblGlobUtilRoomB = new JLabel("Amb B (Vstup+Ošetr.): -");
+        pnlUtils.add(lblGlobUtilNurses); pnlUtils.add(lblGlobUtilDoctors);
+        pnlUtils.add(lblGlobUtilRoomA); pnlUtils.add(lblGlobUtilRoomB);
+
+        // BLOK 4: PRIECHODNOSŤ
+        JPanel pnlCounts = new JPanel(new GridLayout(0, 1));
+        pnlCounts.setBorder(BorderFactory.createTitledBorder("Vybavení pacienti"));
+        lblGlobTotalPatients = new JLabel("Spolu: -");
+        lblGlobTotalWalkIn = new JLabel(" - Peší: -");
+        lblGlobTotalAmb = new JLabel(" - Sanitky: -");
+        pnlCounts.add(lblGlobTotalPatients); pnlCounts.add(lblGlobTotalWalkIn); pnlCounts.add(lblGlobTotalAmb);
+
+        // Vloženie blokov do hlavnej mriežky
+        mainGlobPanel.add(pnlTimes);
+        mainGlobPanel.add(pnlQueues);
+        mainGlobPanel.add(pnlUtils);
+        mainGlobPanel.add(pnlCounts);
 
         p.add(curPanel);
-        p.add(globPanel);
+        p.add(mainGlobPanel);
         return p;
     }
 
@@ -454,6 +767,10 @@ public class MainGUI extends JFrame implements ISimDelegate {
         if (btnStart.getText().equals("Spustiť")) {
 
             sim = new MySimulation();
+
+            // Do runSim():
+            sim.setVariant(cbVariantSelect.getSelectedIndex());
+
             sim.registerDelegate(this);
             sim.setLogger(msg -> {
                 SwingUtilities.invokeLater(() -> {
@@ -627,16 +944,16 @@ public class MainGUI extends JFrame implements ISimDelegate {
             // --- OPRAVENÉ VOLANIA ŠTATISTÍK (cez agentZdrojov) ---
 
             // 1. Čakanie - Sanitky (Aktuálna replikácia)
-            double waitAmbMean = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getMean();
-            double waitAmbLow = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalLower();
-            double waitAmbHigh = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalUpper();
-            lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.1fs <%.1f, %.1f>", waitAmbMean, waitAmbLow, waitAmbHigh));
+            double waitAmbMean = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getMean() / 60.0;
+            double waitAmbLow = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalLower() / 60.0;
+            double waitAmbHigh = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalUpper() / 60.0;
+            lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.2f min <%.2f, %.2f>", waitAmbMean, waitAmbLow, waitAmbHigh));
 
             // 2. Čakanie - Peší (Aktuálna replikácia)
-            double waitWalkInMean = mySim.agentZdrojov().getWaitingTimeWalkInStat().getMean();
-            double waitWalkInLow = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalLower();
-            double waitWalkInHigh = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalUpper();
-            lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.1fs <%.1f, %.1f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
+            double waitWalkInMean = mySim.agentZdrojov().getWaitingTimeWalkInStat().getMean() / 60.0;
+            double waitWalkInLow = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalLower() / 60.0;
+            double waitWalkInHigh = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalUpper() / 60.0;
+            lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.2f min <%.2f, %.2f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
 
             // 3. Vyťaženie - Sestry (Aktuálna replikácia)
             double totalNurses = mySim.getNumNurses();

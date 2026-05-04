@@ -2,6 +2,35 @@
 <ABAsim>
   <Agents>
     <Agent>
+      <SimId>10</SimId>
+      <InternalId>30</InternalId>
+      <Name>AgentUrgentu</Name>
+      <Bounds>966,719,180,180</Bounds>
+      <Reasoner>ManagerUrgentu</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
+      <Components>
+        <Process>
+          <SimId>1008</SimId>
+          <InternalId>138</InternalId>
+          <Name>ProcessPresunOsetrenie</Name>
+          <Bounds>72,110,35,18</Bounds>
+        </Process>
+        <Process>
+          <SimId>1006</SimId>
+          <InternalId>134</InternalId>
+          <Name>ProcessPresunVstup</Name>
+          <Bounds>23,107,35,18</Bounds>
+        </Process>
+        <Process>
+          <SimId>1007</SimId>
+          <InternalId>136</InternalId>
+          <Name>ProcessPresunOdchod</Name>
+          <Bounds>121,107,35,18</Bounds>
+        </Process>
+      </Components>
+    </Agent>
+    <Agent>
       <SimId>12</SimId>
       <InternalId>34</InternalId>
       <Name>AgentVstupnehoVystrenia</Name>
@@ -17,6 +46,15 @@
           <Bounds>72,94,35,18</Bounds>
         </Process>
       </Components>
+    </Agent>
+    <Agent>
+      <SimId>1</SimId>
+      <InternalId>1</InternalId>
+      <Name>AgentBoss</Name>
+      <Bounds>643,-15,180,180</Bounds>
+      <Reasoner>ManagerBoss</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
     </Agent>
     <Agent>
       <SimId>2</SimId>
@@ -42,53 +80,6 @@
       </Components>
     </Agent>
     <Agent>
-      <SimId>10</SimId>
-      <InternalId>30</InternalId>
-      <Name>AgentUrgentu</Name>
-      <Bounds>966,719,180,180</Bounds>
-      <Reasoner>ManagerUrgentu</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
-      <Components>
-        <Process>
-          <SimId>1007</SimId>
-          <InternalId>136</InternalId>
-          <Name>ProcessPresunOdchod</Name>
-          <Bounds>121,107,35,18</Bounds>
-        </Process>
-        <Process>
-          <SimId>1008</SimId>
-          <InternalId>138</InternalId>
-          <Name>ProcessPresunOsetrenie</Name>
-          <Bounds>72,110,35,18</Bounds>
-        </Process>
-        <Process>
-          <SimId>1006</SimId>
-          <InternalId>134</InternalId>
-          <Name>ProcessPresunVstup</Name>
-          <Bounds>23,107,35,18</Bounds>
-        </Process>
-      </Components>
-    </Agent>
-    <Agent>
-      <SimId>1</SimId>
-      <InternalId>1</InternalId>
-      <Name>AgentBoss</Name>
-      <Bounds>643,-15,180,180</Bounds>
-      <Reasoner>ManagerBoss</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
-    </Agent>
-    <Agent>
-      <SimId>15</SimId>
-      <InternalId>41</InternalId>
-      <Name>AgentZdrojov</Name>
-      <Bounds>1894,795,180,180</Bounds>
-      <Reasoner>ManagerZdrojov</Reasoner>
-      <ReasonerBounds>74,25,32,25</ReasonerBounds>
-      <UsePetriNet>false</UsePetriNet>
-    </Agent>
-    <Agent>
       <SimId>14</SimId>
       <InternalId>37</InternalId>
       <Name>AgentOsetrenia</Name>
@@ -103,6 +94,23 @@
           <Name>ProcesOsetrovanie</Name>
           <Bounds>73,104,35,18</Bounds>
         </Process>
+      </Components>
+    </Agent>
+    <Agent>
+      <SimId>15</SimId>
+      <InternalId>41</InternalId>
+      <Name>AgentZdrojov</Name>
+      <Bounds>1891,811,180,180</Bounds>
+      <Reasoner>ManagerZdrojov</Reasoner>
+      <ReasonerBounds>74,25,32,25</ReasonerBounds>
+      <UsePetriNet>false</UsePetriNet>
+      <Components>
+        <Scheduler>
+          <SimId>1009</SimId>
+          <InternalId>151</InternalId>
+          <Name>SchedulerZahrievania</Name>
+          <Bounds>71,92,35,13</Bounds>
+        </Scheduler>
       </Components>
     </Agent>
   </Agents>
@@ -162,6 +170,12 @@
       <Type>StartFinish</Type>
       <Source>37</Source>
       <Destination>87</Destination>
+    </Message>
+    <Message>
+      <InternalId>152</InternalId>
+      <Type>StartFinish</Type>
+      <Source>41</Source>
+      <Destination>151</Destination>
     </Message>
     <Message>
       <InternalId>33</InternalId>
@@ -300,5 +314,5 @@
       <Destination>30</Destination>
     </Message>
   </Messages>
-  <IID>148</IID>
+  <IID>154</IID>
 </ABAsim>

@@ -71,13 +71,13 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 	{
 		switch (message.code())
 		{
-		case Mc.start:
-			processStart(message);
-		break;
+			case Mc.start:
+				processStart(message);
+				break;
 
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"

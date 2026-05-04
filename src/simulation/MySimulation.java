@@ -1,18 +1,17 @@
 package simulation;
 
 import OSPABA.*;
-import OSPAnimator.AnimQueue;
-import OSPAnimator.AnimShapeItem;
-import Statistics.Stat;
-import Statistics.TimeStat;
 import agents.agentosetrenia.*;
 import agents.agentokolia.*;
 import agents.agentzdrojov.*;
 import agents.agentboss.*;
 import agents.agenturgentu.*;
 import agents.agentvstupnehovystrenia.*;
+import OSPAnimator.AnimQueue;
+import OSPAnimator.AnimShapeItem;
+import Statistics.Stat;
+import Statistics.TimeStat;
 import entities.Patient;
-
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -40,24 +39,53 @@ public class MySimulation extends OSPABA.Simulation
 	public Map<AnimShapeItem, Point> domovSestier = new HashMap<>();
 	public Map<AnimShapeItem,Point> domovLekarov = new HashMap<>();
 
+    //statistiky
 	private Stat globalWaitAmbStat;
 	private Stat globalWaitWalkInStat;
 	private Stat globalUtilNursesStat;
 	private Stat globalUtilDoctorsStat;
 
+	private Stat globalTimeInSystemAmbStat;
+	private Stat globalTimeInSystemWalkInStat;
+    private Stat globalRoomAUtilStat = new Stat();
+    private Stat globalRoomBUtilStat = new Stat();
+
+    // Globálne štatistiky pre počty vybavených pacientov
+    private Stat globalTotalPatientsStat = new Stat();
+    private Stat globalTotalWalkInStat = new Stat();
+    private Stat globalTotalAmbStat = new Stat();
+
+    private Stat globalEntryWaitAmbStat = new Stat();
+    private Stat globalEntryWaitWalkInStat = new Stat();
+    private Stat globalEntryQueueLengthStat = new Stat();
+
+    private Stat globalTreatmentWaitAmbStat = new Stat();
+    private Stat globalTreatmentWaitWalkInStat = new Stat();
+    private Stat globalTreatmentQueueLengthStat = new Stat();
+
+    // Počítadlá pre aktuálnu replikáciu
+    private int repTotalPatients;
+    private int repWalkInPatients;
+    private int repAmbPatients;
+
 
 	//zahrievanie
-	private double warmUpTime = 86400.0;
+	private double warmUpTime;
+
+    //varianty
+    private int simVariant = 0;
 
 	public MySimulation()
 	{
-		this.numDoctors = 10;
-		this.numNurses = 10;
+		this.numDoctors = 6;
+		this.numNurses = 8;
 		globalWaitAmbStat = new Stat();
 		globalWaitWalkInStat = new Stat();
 		globalUtilNursesStat = new Stat();
 		globalUtilDoctorsStat = new Stat();
-		//this.setWarmUpTime(86400.0);
+		globalTimeInSystemAmbStat = new Stat();
+		globalTimeInSystemWalkInStat = new Stat();
+		this.warmUpTime = 86400.0;
 		init();
 	}
 
@@ -69,6 +97,15 @@ public class MySimulation extends OSPABA.Simulation
 		globalWaitWalkInStat.clear();
 		globalUtilNursesStat.clear();
 		globalUtilDoctorsStat.clear();
+		globalTimeInSystemAmbStat.clear();
+		globalTimeInSystemWalkInStat.clear();
+        globalEntryWaitAmbStat.clear();
+        globalEntryWaitWalkInStat.clear();
+        globalEntryQueueLengthStat.clear();
+        globalTreatmentWaitAmbStat.clear();
+        globalTreatmentWaitWalkInStat.clear();
+        globalTreatmentQueueLengthStat.clear();
+
 	}
 
 	@Override
@@ -76,6 +113,9 @@ public class MySimulation extends OSPABA.Simulation
 	{
 		super.prepareReplication();
 		activePatients.clear();
+        repTotalPatients = 0;
+        repWalkInPatients = 0;
+        repAmbPatients = 0;
 
 		Patient.resetIdCounter();
 		// Reset entities, queues, local statistics, etc...
@@ -90,49 +130,71 @@ public class MySimulation extends OSPABA.Simulation
 		globalWaitWalkInStat.add(agentZdrojov().getWaitingTimeWalkInStat().getMean());
 		globalUtilNursesStat.add(agentZdrojov().getNurseUtilizationStat().getMean());
 		globalUtilDoctorsStat.add(agentZdrojov().getDoctorUtilizationStat().getMean());
+		globalTimeInSystemAmbStat.add(agentZdrojov().getTimeInSystemAmbStat().getMean());
+		globalTimeInSystemWalkInStat.add(agentZdrojov().getTimeInSystemWalkInStat().getMean());
+
+        globalRoomAUtilStat.add(agentZdrojov().getRoomAUtilizationStat().getMean());
+        globalRoomBUtilStat.add(agentZdrojov().getRoomBUtilizationStat().getMean());
+
+        globalTotalPatientsStat.add(repTotalPatients);
+        globalTotalWalkInStat.add(repWalkInPatients);
+        globalTotalAmbStat.add(repAmbPatients);
+
+        globalEntryWaitAmbStat.add(agentZdrojov().getEntryWaitAmbStat().getMean());
+        globalEntryWaitWalkInStat.add(agentZdrojov().getEntryWaitWalkInStat().getMean());
+        globalEntryQueueLengthStat.add(agentZdrojov().getEntryQueueLengthStat().getMean());
+
+        globalTreatmentWaitAmbStat.add(agentZdrojov().getTreatmentWaitAmbStat().getMean());
+        globalTreatmentWaitWalkInStat.add(agentZdrojov().getTreatmentWaitWalkInStat().getMean());
+        globalTreatmentQueueLengthStat.add(agentZdrojov().getTreatmentQueueLengthStat().getMean());
+
 	}
 
-	@Override
-	public void simulationFinished()
-	{
-		// Display simulation results
-		super.simulationFinished();
-		// --- VÝPIS DO KLASICKEJ KONZOLY ---
-		System.out.println("\n======================================================");
-		System.out.println("         SIMULÁCIA UKONČENÁ - GLOBÁLNE VÝSLEDKY       ");
-		System.out.println("======================================================");
-		System.out.println("Počet vykonaných replikácií: " + currentReplication());
-		System.out.println("------------------------------------------------------");
+    @Override
+    public void simulationFinished()
+    {
+        super.simulationFinished();
+        System.out.println("\n======================================================");
+        System.out.println("         SIMULACIA UKONCENA - GLOBALNE VYSLEDKY       ");
+        System.out.println("======================================================");
+        System.out.println("Pocet vykonanych replikacii: " + currentReplication());
+        System.out.println("------------------------------------------------------");
 
-		// 1. Čakanie - Sanitky
-		double waitAmbMean = globalWaitAmbStat.getMean();
-		double waitAmbLow = globalWaitAmbStat.getConfidenceIntervalLower();
-		double waitAmbHigh = globalWaitAmbStat.getConfidenceIntervalUpper();
-		System.out.printf("Priemerný čas čakania (Sanitky): %.2f s  IS: <%.2f, %.2f>\n", waitAmbMean, waitAmbLow, waitAmbHigh);
+        System.out.println("\n--- 1. CASY (v minutach) ---");
+        // Celkový čas v systéme
+        System.out.printf("Cas v systeme celkovo (Sanitky): %.2f min  IS: <%.2f, %.2f>\n", globalTimeInSystemAmbStat.getMean() / 60.0, globalTimeInSystemAmbStat.getConfidenceIntervalLower() / 60.0, globalTimeInSystemAmbStat.getConfidenceIntervalUpper() / 60.0);
+        System.out.printf("Cas v systeme celkovo (Pesi):    %.2f min  IS: <%.2f, %.2f>\n", globalTimeInSystemWalkInStat.getMean() / 60.0, globalTimeInSystemWalkInStat.getConfidenceIntervalLower() / 60.0, globalTimeInSystemWalkInStat.getConfidenceIntervalUpper() / 60.0);
+        // Celkové čakanie
+        System.out.printf("Celkove cakanie (Sanitky):       %.2f min  IS: <%.2f, %.2f>\n", globalWaitAmbStat.getMean() / 60.0, globalWaitAmbStat.getConfidenceIntervalLower() / 60.0, globalWaitAmbStat.getConfidenceIntervalUpper() / 60.0);
+        System.out.printf("Celkove cakanie (Pesi):          %.2f min  IS: <%.2f, %.2f>\n", globalWaitWalkInStat.getMean() / 60.0, globalWaitWalkInStat.getConfidenceIntervalLower() / 60.0, globalWaitWalkInStat.getConfidenceIntervalUpper() / 60.0);
+        // Čakanie na Vstup
+        System.out.printf("Cakanie na VSTUP (Sanitky):      %.2f min  IS: <%.2f, %.2f>\n", globalEntryWaitAmbStat.getMean() / 60.0, globalEntryWaitAmbStat.getConfidenceIntervalLower() / 60.0, globalEntryWaitAmbStat.getConfidenceIntervalUpper() / 60.0);
+        System.out.printf("Cakanie na VSTUP (Pesi):         %.2f min  IS: <%.2f, %.2f>\n", globalEntryWaitWalkInStat.getMean() / 60.0, globalEntryWaitWalkInStat.getConfidenceIntervalLower() / 60.0, globalEntryWaitWalkInStat.getConfidenceIntervalUpper() / 60.0);
+        // Čakanie na Ošetrenie (Lekára)
+        System.out.printf("Cakanie na OSETRENIE (Sanitky):  %.2f min  IS: <%.2f, %.2f>\n", globalTreatmentWaitAmbStat.getMean() / 60.0, globalTreatmentWaitAmbStat.getConfidenceIntervalLower() / 60.0, globalTreatmentWaitAmbStat.getConfidenceIntervalUpper() / 60.0);
+        System.out.printf("Cakanie na OSETRENIE (Pesi):     %.2f min  IS: <%.2f, %.2f>\n", globalTreatmentWaitWalkInStat.getMean() / 60.0, globalTreatmentWaitWalkInStat.getConfidenceIntervalLower() / 60.0, globalTreatmentWaitWalkInStat.getConfidenceIntervalUpper() / 60.0);
 
-		// 2. Čakanie - Peší
-		double waitWalkInMean = globalWaitWalkInStat.getMean();
-		double waitWalkInLow = globalWaitWalkInStat.getConfidenceIntervalLower();
-		double waitWalkInHigh = globalWaitWalkInStat.getConfidenceIntervalUpper();
-		System.out.printf("Priemerný čas čakania (Peší):    %.2f s  IS: <%.2f, %.2f>\n", waitWalkInMean, waitWalkInLow, waitWalkInHigh);
+        System.out.println("\n--- 2. RADY (v osobach) ---");
+        System.out.printf("Dlzka radu na VSTUP:             %.2f os.  IS: <%.2f, %.2f>\n", globalEntryQueueLengthStat.getMean(), globalEntryQueueLengthStat.getConfidenceIntervalLower(), globalEntryQueueLengthStat.getConfidenceIntervalUpper());
+        System.out.printf("Dlzka radu na OSETRENIE:         %.2f os.  IS: <%.2f, %.2f>\n", globalTreatmentQueueLengthStat.getMean(), globalTreatmentQueueLengthStat.getConfidenceIntervalLower(), globalTreatmentQueueLengthStat.getConfidenceIntervalUpper());
 
-		// 3. Vyťaženie - Sestry
-		double utilNursesMean = globalUtilNursesStat.getMean();
-		double utilNursesPct = (numNurses > 0) ? (utilNursesMean / numNurses) * 100 : 0;
-		System.out.printf("Priemerné vyťaženie (Sestry):    %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n",
-				utilNursesPct, utilNursesMean, numNurses,
-				globalUtilNursesStat.getConfidenceIntervalLower(), globalUtilNursesStat.getConfidenceIntervalUpper());
+        System.out.println("\n--- 3. VYTAZENOST ZDROJOV (%) ---");
+        double utilNursesMean = globalUtilNursesStat.getMean();
+        System.out.printf("Sestry:                          %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n", (numNurses > 0) ? (utilNursesMean / numNurses) * 100 : 0, utilNursesMean, numNurses, globalUtilNursesStat.getConfidenceIntervalLower(), globalUtilNursesStat.getConfidenceIntervalUpper());
+        double utilDocsMean = globalUtilDoctorsStat.getMean();
+        System.out.printf("Lekari:                          %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n", (numDoctors > 0) ? (utilDocsMean / numDoctors) * 100 : 0, utilDocsMean, numDoctors, globalUtilDoctorsStat.getConfidenceIntervalLower(), globalUtilDoctorsStat.getConfidenceIntervalUpper());
+        double utilRoomAMean = globalRoomAUtilStat.getMean();
+        System.out.printf("Ambulancia A (Osetrenie):        %.2f %%  (%.2f / 5) IS: <%.2f, %.2f>\n", (utilRoomAMean / 5.0) * 100, utilRoomAMean, globalRoomAUtilStat.getConfidenceIntervalLower(), globalRoomAUtilStat.getConfidenceIntervalUpper());
+        double utilRoomBMean = globalRoomBUtilStat.getMean();
+        System.out.printf("Ambulancia B (Osetrenie+Vstup):  %.2f %%  (%.2f / 7) IS: <%.2f, %.2f>\n", (utilRoomBMean / 7.0) * 100, utilRoomBMean, globalRoomBUtilStat.getConfidenceIntervalLower(), globalRoomBUtilStat.getConfidenceIntervalUpper());
 
-		// 4. Vyťaženie - Lekári
-		double utilDoctorsMean = globalUtilDoctorsStat.getMean();
-		double utilDoctorsPct = (numDoctors > 0) ? (utilDoctorsMean / numDoctors) * 100 : 0;
-		System.out.printf("Priemerné vyťaženie (Lekári):    %.2f %%  (%.2f / %d) IS: <%.2f, %.2f>\n",
-				utilDoctorsPct, utilDoctorsMean, numDoctors,
-				globalUtilDoctorsStat.getConfidenceIntervalLower(), globalUtilDoctorsStat.getConfidenceIntervalUpper());
+        System.out.println("\n--- 4. PRIECHODNOST (pocet pacientov) ---");
+        System.out.printf("Vybaveni celkovo:                %.2f  IS: <%.2f, %.2f>\n", globalTotalPatientsStat.getMean(), globalTotalPatientsStat.getConfidenceIntervalLower(), globalTotalPatientsStat.getConfidenceIntervalUpper());
+        System.out.printf(" - Z toho Pesi:                  %.2f  IS: <%.2f, %.2f>\n", globalTotalWalkInStat.getMean(), globalTotalWalkInStat.getConfidenceIntervalLower(), globalTotalWalkInStat.getConfidenceIntervalUpper());
+        System.out.printf(" - Z toho Sanitky:               %.2f  IS: <%.2f, %.2f>\n", globalTotalAmbStat.getMean(), globalTotalAmbStat.getConfidenceIntervalLower(), globalTotalAmbStat.getConfidenceIntervalUpper());
 
-		System.out.println("======================================================\n");
-	}
-
+        System.out.println("======================================================\n");
+    }
 	//meta! userInfo="Generated code: do not modify", tag="begin"
 	private void init()
 	{
@@ -382,6 +444,48 @@ public AgentZdrojov agentZdrojov()
 		return globalUtilDoctorsStat;
 	}
 
+	public Stat getGlobalTimeInSystemAmbStat() { return globalTimeInSystemAmbStat; }
+	public Stat getGlobalTimeInSystemWalkInStat() { return globalTimeInSystemWalkInStat; }
+
+    public Stat getGlobalRoomAUtilStat() {
+        return globalRoomAUtilStat;
+    }
+
+    public Stat getGlobalRoomBUtilStat() {
+        return globalRoomBUtilStat;
+    }
+
+    public Stat getGlobalTotalPatientsStat() {
+        return globalTotalPatientsStat;
+    }
+
+    public Stat getGlobalTotalWalkInStat() {
+        return globalTotalWalkInStat;
+    }
+
+    public Stat getGlobalTotalAmbStat() {
+        return globalTotalAmbStat;
+    }
+
+    // ----------------- GETTERY PRE ČAKANIE NA VSTUP -----------------
+
+    public Stat getGlobalEntryWaitAmbStat() {
+        return globalEntryWaitAmbStat;
+    }
+
+    public Stat getGlobalEntryWaitWalkInStat() {
+        return globalEntryWaitWalkInStat;
+    }
+
+    public Stat getGlobalEntryQueueLengthStat() {
+        return globalEntryQueueLengthStat;
+    }
+
+    public Stat getGlobalTreatmentWaitAmbStat() { return globalTreatmentWaitAmbStat; }
+    public Stat getGlobalTreatmentWaitWalkInStat() { return globalTreatmentWaitWalkInStat; }
+    public Stat getGlobalTreatmentQueueLengthStat() { return globalTreatmentQueueLengthStat; }
+
+
 	public double getWarmUpTime() {
 		return warmUpTime;
 	}
@@ -389,4 +493,18 @@ public AgentZdrojov agentZdrojov()
 	public void setWarmUpTime(double warmUpTime) {
 		this.warmUpTime = warmUpTime;
 	}
+
+	public void incrementPatientCount(boolean isAmbulance) {
+        repTotalPatients++;
+        if (isAmbulance) repAmbPatients++;
+        else repWalkInPatients++;
+    }
+
+    public int getVariant() {
+        return simVariant;
+    }
+
+    public void setVariant(int simVariant) {
+        this.simVariant = simVariant;
+    }
 }

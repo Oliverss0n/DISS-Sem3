@@ -62,22 +62,22 @@ public class ManagerOkolia extends OSPABA.Manager
 	{
 		switch (message.code())
 		{
-		case Mc.finish:
-			switch (message.sender().id())
-			{
-			case Id.schedulerSanitka:
-				processFinishSchedulerSanitka(message);
-			break;
+			case Mc.finish:
+				switch (message.sender().id())
+				{
+					case Id.schedulerSanitka:
+						processFinishSchedulerSanitka(message);
+						break;
 
-			case Id.schedulerPesi:
-				processFinishSchedulerPesi(message);
-			break;
-			}
-		break;
+					case Id.schedulerPesi:
+						processFinishSchedulerPesi(message);
+						break;
+				}
+				break;
 
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"

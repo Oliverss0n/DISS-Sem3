@@ -65,17 +65,17 @@ public class ProcessPresunVstup extends OSPABA.Process
 	{
 		switch (message.code())
 		{
-		case Mc.start:
-			processStart(message);
-		break;
+			case Mc.start:
+				processStart(message);
+				break;
 
-		case Mc.koniecZdrzania:
-			assistantFinished(message);
-		break;
+			case Mc.koniecZdrzania:
+				assistantFinished(message);
+				break;
 
-		default:
-			processDefault(message);
-		break;
+			default:
+				processDefault(message);
+				break;
 		}
 	}
 	//meta! tag="end"
