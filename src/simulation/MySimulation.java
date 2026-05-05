@@ -23,8 +23,9 @@ public class MySimulation extends OSPABA.Simulation
 	private int numDoctors;
 	private int numNurses;
 
-	//private List<Patient> activePatients = new LinkedList<>();
-	//private List<Patient> activePatients = new ArrayList<>();
+	private double simTime = 2419200.0;
+
+
 	private List<Patient> activePatients = Collections.synchronizedList(new ArrayList<>());
 	private boolean logEnabled = false;
 	private Consumer<String> logger;
@@ -85,7 +86,7 @@ public class MySimulation extends OSPABA.Simulation
 		globalUtilDoctorsStat = new Stat();
 		globalTimeInSystemAmbStat = new Stat();
 		globalTimeInSystemWalkInStat = new Stat();
-		this.warmUpTime = 86400.0;
+		this.warmUpTime = 86400.0; //86400.0
 		init();
 	}
 
@@ -150,6 +151,7 @@ public class MySimulation extends OSPABA.Simulation
 
 	}
 
+	//vypisy vygenerovane AI
     @Override
     public void simulationFinished()
     {
@@ -307,7 +309,6 @@ public AgentZdrojov agentZdrojov()
 		return genSeed;
 	}
 
-	//logy - asi niekde inde dat?
 	public void setLogEnabled(boolean enabled) {
 		this.logEnabled = enabled;
 	}
@@ -507,4 +508,12 @@ public AgentZdrojov agentZdrojov()
     public void setVariant(int simVariant) {
         this.simVariant = simVariant;
     }
+
+	public double getSimTime() {
+		return simTime;
+	}
+
+	public void setSimTime(double simTime) {
+		this.simTime = simTime;
+	}
 }

@@ -35,6 +35,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private MySimulation sim;
     private Thread simThread;
 
+    //private final double SIM_TIME = 2419200.0;
+    //private final double SIM_TIME = 2419200.0;
+
     // --- GUI Komponenty ---
     private JSlider speedSlider;
     private JButton btnStart, btnPause;
@@ -90,6 +93,13 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JButton btnExperiment;
 
     private JComboBox<String> cbVariantSelect;
+
+    // --- Graf ustaľovania ---
+    private XYSeries seriesUstalovanieAmb;
+    private XYSeries seriesUstalovaniePesi;
+
+    private JTextField tfSettlingReps;
+    private JButton btnDrawSettling;
 
 
 
@@ -152,6 +162,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         tabbedPane.addTab("Hlavná Simulácia", mainPanel);
         tabbedPane.addTab("Graf Zahrievania (Eyeballing)", buildWarmUpPanel());
         tabbedPane.addTab("Analýza Citlivosti", buildSensitivityPanel());
+        tabbedPane.addTab("Graf Ustaľovania", buildSettlingPanel());
 
         add(tabbedPane);
         setVisible(true);
@@ -247,13 +258,11 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     private JPanel buildWarmUpPanel() {
         JPanel warmUpPanel = new JPanel(new BorderLayout());
-
-        // Horný ovládací panel
         JPanel warmUpControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         warmUpControls.setBorder(BorderFactory.createTitledBorder("Vizuálny odhad (Eyeballing)"));
 
-        tfEyeballingStep = new JTextField("3600", 5); // Zber dát každú hodinu
-        tfEyeballingReps = new JTextField("10", 4);   // Viac replikácií pre hladší priemer
+        tfEyeballingStep = new JTextField("3600", 5);
+        tfEyeballingReps = new JTextField("10", 4);
 
         warmUpControls.add(new JLabel("Krok zberu (s):"));
         warmUpControls.add(tfEyeballingStep);
@@ -263,23 +272,24 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JButton btnRunEyeballing = new JButton("Vykresliť graf zahrievania");
         btnRunEyeballing.addActionListener(e -> runEyeballingObservation());
         warmUpControls.add(btnRunEyeballing);
-
         warmUpPanel.add(warmUpControls, BorderLayout.NORTH);
 
-        // Graf
-        eyeballingSeries = new XYSeries("Priemerný počet pacientov v systéme");
+        // ZMENA TU: Názvy série a osí
+        eyeballingSeries = new XYSeries("Priemerný počet osôb v radoch");
         XYSeriesCollection eyeballingDataset = new XYSeriesCollection(eyeballingSeries);
         JFreeChart eyeballingChart = ChartFactory.createXYLineChart(
-                "Sledovanie ustáleného stavu", "Simulačný čas (hodiny)", "Počet pacientov (ks)",
+                "Sledovanie ustáleného stavu (Zahrievanie)",
+                "Simulačný čas (hodiny)",
+                "Priemerný počet osôb v radoch", // <--- Os Y
                 eyeballingDataset, PlotOrientation.VERTICAL, true, true, false
         );
 
         ChartPanel chartPanel = new ChartPanel(eyeballingChart);
         warmUpPanel.add(chartPanel, BorderLayout.CENTER);
-
         return warmUpPanel;
     }
 
+    //vygenerovane pomocou AI pomocou inspiracie z predoslej semestralky
     private void runEyeballingObservation() {
         btnStart.setEnabled(false);
         eyeballingSeries.clear();
@@ -296,6 +306,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         // Vytvoríme inštanciu jadra čisto pre zber dát
         MySimulation eyeballingSim = new MySimulation();
+        eyeballingSim.setWarmUpTime(0);
         eyeballingSim.setNumDoctors(Integer.parseInt(tfDoctors.getText()));
         eyeballingSim.setNumNurses(Integer.parseInt(tfNurses.getText()));
 
@@ -340,7 +351,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
     }
 
     private void processAndDrawEyeballing(double[] sums, int numSteps, int numReps, int step) {
-        int windowSize = 50; // Kĺzavý priemer pre vyhladenie zubov v grafe
+        int windowSize = 100; // Kĺzavý priemer pre vyhladenie zubov v grafe
 
         for (int i = 0; i < numSteps; i++) {
             // Najprv urobíme priemer cez všetky zbehnuté replikácie
@@ -484,7 +495,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 expSim.setSimSpeed(0, 0);
                 expSim.setMaxSimSpeed();
 
-                expSim.simulate(reps, 2505600.0);
+                expSim.simulate(reps, sim.getSimTime());
 
                 double avgAmbMins = expSim.getGlobalWaitAmbStat().getMean() / 60.0;
                 double avgWalkMins = expSim.getGlobalWaitWalkInStat().getMean() / 60.0;
@@ -540,7 +551,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
                         expSim.setSimSpeed(0, 0);
                         expSim.setMaxSimSpeed();
 
-                        expSim.simulate(reps, 2505600.0); // 28 dní
+                        expSim.simulate(reps, sim.getSimTime()); // 28 dní
 
                         double avgAmbMins = expSim.getGlobalWaitAmbStat().getMean() / 60.0;
                         double avgWalkMins = expSim.getGlobalWaitWalkInStat().getMean() / 60.0;
@@ -621,15 +632,38 @@ public class MainGUI extends JFrame implements ISimDelegate {
         lblGlobTreatQueue.setText(String.format("Rad Ošetrenie (osoby): %.2f <%.2f, %.2f>", sim.getGlobalTreatmentQueueLengthStat().getMean(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalLower(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalUpper()));
 
         // --- 3. BLOK: VYŤAŽENOSŤ (% s IS) ---
+        // --- 3. BLOK: VYŤAŽENOSŤ (% s IS) ---
+        double totalNurses = sim.getNumNurses();
         double uNur = sim.getGlobalUtilNursesStat().getMean();
-        lblGlobUtilNurses.setText(String.format("Sestry: %.2f%% <%.2f, %.2f>", (sim.getNumNurses() > 0) ? (uNur / sim.getNumNurses()) * 100 : 0, sim.getGlobalUtilNursesStat().getConfidenceIntervalLower(), sim.getGlobalUtilNursesStat().getConfidenceIntervalUpper()));
+        double uNurLow = sim.getGlobalUtilNursesStat().getConfidenceIntervalLower();
+        double uNurHigh = sim.getGlobalUtilNursesStat().getConfidenceIntervalUpper();
+        lblGlobUtilNurses.setText(String.format("Sestry: %.2f%% <%.2f%%, %.2f%%>",
+                (totalNurses > 0) ? (uNur / totalNurses) * 100 : 0,
+                (totalNurses > 0) ? (uNurLow / totalNurses) * 100 : 0,
+                (totalNurses > 0) ? (uNurHigh / totalNurses) * 100 : 0));
 
+        double totalDocs = sim.getNumDoctors();
         double uDoc = sim.getGlobalUtilDoctorsStat().getMean();
-        lblGlobUtilDoctors.setText(String.format("Lekári: %.2f%% <%.2f, %.2f>", (sim.getNumDoctors() > 0) ? (uDoc / sim.getNumDoctors()) * 100 : 0, sim.getGlobalUtilDoctorsStat().getConfidenceIntervalLower(), sim.getGlobalUtilDoctorsStat().getConfidenceIntervalUpper()));
+        double uDocLow = sim.getGlobalUtilDoctorsStat().getConfidenceIntervalLower();
+        double uDocHigh = sim.getGlobalUtilDoctorsStat().getConfidenceIntervalUpper();
+        lblGlobUtilDoctors.setText(String.format("Lekári: %.2f%% <%.2f%%, %.2f%%>",
+                (totalDocs > 0) ? (uDoc / totalDocs) * 100 : 0,
+                (totalDocs > 0) ? (uDocLow / totalDocs) * 100 : 0,
+                (totalDocs > 0) ? (uDocHigh / totalDocs) * 100 : 0));
 
-        lblGlobUtilRoomA.setText(String.format("Amb A: %.2f%% <%.2f, %.2f>", (sim.getGlobalRoomAUtilStat().getMean() / 5.0) * 100, sim.getGlobalRoomAUtilStat().getConfidenceIntervalLower(), sim.getGlobalRoomAUtilStat().getConfidenceIntervalUpper()));
-        lblGlobUtilRoomB.setText(String.format("Amb B: %.2f%% <%.2f, %.2f>", (sim.getGlobalRoomBUtilStat().getMean() / 7.0) * 100, sim.getGlobalRoomBUtilStat().getConfidenceIntervalLower(), sim.getGlobalRoomBUtilStat().getConfidenceIntervalUpper()));
+        double uRoomALow = sim.getGlobalRoomAUtilStat().getConfidenceIntervalLower();
+        double uRoomAHigh = sim.getGlobalRoomAUtilStat().getConfidenceIntervalUpper();
+        lblGlobUtilRoomA.setText(String.format("Amb A: %.2f%% <%.2f%%, %.2f%%>",
+                (sim.getGlobalRoomAUtilStat().getMean() / 5.0) * 100,
+                (uRoomALow / 5.0) * 100,
+                (uRoomAHigh / 5.0) * 100));
 
+        double uRoomBLow = sim.getGlobalRoomBUtilStat().getConfidenceIntervalLower();
+        double uRoomBHigh = sim.getGlobalRoomBUtilStat().getConfidenceIntervalUpper();
+        lblGlobUtilRoomB.setText(String.format("Amb B: %.2f%% <%.2f%%, %.2f%%>",
+                (sim.getGlobalRoomBUtilStat().getMean() / 7.0) * 100,
+                (uRoomBLow / 7.0) * 100,
+                (uRoomBHigh / 7.0) * 100));
         // --- 4. BLOK: PRIECHODNOSŤ (v osobách s IS) ---
         lblGlobTotalPatients.setText(String.format("Vybavení pacienti: %.1f <%.1f, %.1f>", sim.getGlobalTotalPatientsStat().getMean(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalLower(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalUpper()));
         lblGlobTotalWalkIn.setText(String.format(" - Z toho Peší: %.1f <%.1f, %.1f>", sim.getGlobalTotalWalkInStat().getMean(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalLower(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalUpper()));
@@ -788,6 +822,8 @@ public class MainGUI extends JFrame implements ISimDelegate {
             sim.setNumNurses(nurses);
 
             taLogs.setText("");
+            if (seriesUstalovanieAmb != null) seriesUstalovanieAmb.clear();
+            if (seriesUstalovaniePesi != null) seriesUstalovaniePesi.clear();
             updateSimSpeed();
 
             animationPanel.removeAll();
@@ -808,7 +844,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
             simThread = new Thread() {
                 public void run() {
                     try {
-                        sim.simulate(reps, 2419200.0);
+                        sim.simulate(reps, sim.getSimTime());
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -851,6 +887,121 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
             sim.setSimSpeed(interval, duration);
         }
+    }
+
+    private JPanel buildSettlingPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // --- HORNÝ OVLÁDACÍ PANEL ---
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenie experimentu"));
+
+        tfSettlingReps = new JTextField("500", 5);
+        btnDrawSettling = new JButton("Vykresliť graf ustaľovania");
+
+        topPanel.add(new JLabel("Počet replikácií pre graf:"));
+        topPanel.add(tfSettlingReps);
+        topPanel.add(Box.createHorizontalStrut(15));
+        topPanel.add(btnDrawSettling);
+
+        btnDrawSettling.addActionListener(e -> runSettlingExperiment());
+        panel.add(topPanel, BorderLayout.NORTH);
+
+        // --- GRAF ---
+        seriesUstalovanieAmb = new XYSeries("Priemerné čakanie - Sanitky (min)");
+        seriesUstalovaniePesi = new XYSeries("Priemerné čakanie - Peší (min)");
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        dataset.addSeries(seriesUstalovanieAmb);
+        dataset.addSeries(seriesUstalovaniePesi);
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Ustaľovanie priemerných dôb čakania pri rastúcom počte replikácií",
+                "Počet vykonaných replikácií",
+                "Priemerná doba čakania (Minúty)",
+                dataset,
+                PlotOrientation.VERTICAL,
+                true, true, false
+        );
+
+        org.jfree.chart.plot.XYPlot plot = chart.getXYPlot();
+
+        // Os X (Replikácie) - adaptívne škálovanie
+        org.jfree.chart.axis.NumberAxis xAxis = (org.jfree.chart.axis.NumberAxis) plot.getDomainAxis();
+        xAxis.setAutoRange(true);
+        xAxis.setAutoRangeIncludesZero(false); // Nenúti os X začínať od nuly
+
+        // Os Y (Čakanie v minútach) - adaptívne škálovanie s okrajmi
+        org.jfree.chart.axis.NumberAxis yAxis = (org.jfree.chart.axis.NumberAxis) plot.getRangeAxis();
+        yAxis.setAutoRange(true);
+        yAxis.setAutoRangeIncludesZero(false); // Dovolí osi Y priblížiť sa na reálne hodnoty (napr. 14 až 16 minút)
+
+        // Pridanie 10% okraja hore a dole, aby graf nebol nalepený na hranách
+        yAxis.setUpperMargin(0.05);
+        yAxis.setLowerMargin(0.05);
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        panel.add(chartPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void runSettlingExperiment() {
+        btnDrawSettling.setEnabled(false);
+        btnStart.setEnabled(false);
+        seriesUstalovanieAmb.clear();
+        seriesUstalovaniePesi.clear();
+
+        int reps = Integer.parseInt(tfSettlingReps.getText());
+        int docs = Integer.parseInt(tfDoctors.getText());
+        int nurses = Integer.parseInt(tfNurses.getText());
+        int variant = cbVariantSelect.getSelectedIndex();
+
+        new Thread(() -> {
+            MySimulation settleSim = new MySimulation();
+            settleSim.setVariant(variant);
+            settleSim.setNumDoctors(docs);
+            settleSim.setNumNurses(nurses);
+            //settleSim.setWarmUpTime(WARMUP); // Ak používaš globálnu konštantu
+            settleSim.setSimSpeed(0, 0);
+            settleSim.setMaxSimSpeed();
+
+            settleSim.registerDelegate(new ISimDelegate() {
+                @Override
+                public void simStateChanged(Simulation simulation, SimState simState) {
+                    if (simState == SimState.replicationStopped) {
+                        MySimulation ms = (MySimulation) simulation;
+                        int repNum = ms.currentReplication(); // BEZ +1 !
+
+                        // repNum=0 → globalStat je prázdny → preskočíme
+                        if (repNum < 1) return;
+
+                        double actMeanAmb = ms.getGlobalWaitAmbStat().getMean() / 60.0;
+                        double actMeanWalk = ms.getGlobalWaitWalkInStat().getMean() / 60.0;
+
+                        SwingUtilities.invokeLater(() -> {
+                            seriesUstalovanieAmb.add(repNum, actMeanAmb);
+                            seriesUstalovaniePesi.add(repNum, actMeanWalk);
+                        });
+                    }
+                }
+
+                @Override
+                public void refresh(Simulation simulation) {
+                    // Tu nepotrebujeme robiť nič
+                }
+            });
+
+            // Spustenie na zvolený počet replikácií a čas 28 dní
+            settleSim.simulate(reps, 2419200.0);
+
+            SwingUtilities.invokeLater(() -> {
+                btnDrawSettling.setEnabled(true);
+                btnStart.setEnabled(true);
+                JOptionPane.showMessageDialog(MainGUI.this, "Graf ustaľovania bol úspešne vygenerovaný!");
+            });
+        }).start();
     }
 
 

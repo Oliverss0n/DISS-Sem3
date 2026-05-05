@@ -24,10 +24,7 @@ public class SchedulerZahrievania extends OSPABA.Scheduler
 	{
 		MySimulation sim = (MySimulation) mySim();
 
-		// Zmeníme kód správy, aby sme po prebudení nepadli do nekonečného cyklu
 		message.setCode(Mc.koniecZahrievania);
-
-		// Uspíme správu na dĺžku zahrievania (86 400 sekúnd)
 		hold(sim.getWarmUpTime(), message);
 	}
 

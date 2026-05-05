@@ -290,7 +290,21 @@ public class ManagerZdrojov extends OSPABA.Manager
 	//meta! sender="SchedulerZahrievania", id="152", type="Finish"
 	public void processFinish(MessageForm message)
 	{
-		processKoniecZahrievania(message);
+		myAgent().getWaitingTimeAmbulanceStat().clear();
+		myAgent().getWaitingTimeWalkInStat().clear();
+		myAgent().getEntryWaitAmbStat().clear();        // NOVÉ
+		myAgent().getEntryWaitWalkInStat().clear();     // NOVÉ
+		myAgent().getTreatmentWaitAmbStat().clear();    // NOVÉ
+		myAgent().getTreatmentWaitWalkInStat().clear(); // NOVÉ
+
+		// 2. Časovo-vážené štatistiky (TimeStat) - vyžadujú currentTime()
+		double now = mySim().currentTime();
+		myAgent().getNurseUtilizationStat().clear(now);
+		myAgent().getDoctorUtilizationStat().clear(now);
+		myAgent().getRoomAUtilizationStat().clear(now);
+		myAgent().getRoomBUtilizationStat().clear(now);
+		myAgent().getEntryQueueLengthStat().clear(now);     // NOVÉ
+		myAgent().getTreatmentQueueLengthStat().clear(now); // NOVÉ
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -368,22 +382,5 @@ public class ManagerZdrojov extends OSPABA.Manager
 		// TU už nič ďalšie netreba, tú duplicitu vymaž.
 	}
 
-	private void processKoniecZahrievania(MessageForm message) {
-		myAgent().getWaitingTimeAmbulanceStat().clear();
-		myAgent().getWaitingTimeWalkInStat().clear();
-		myAgent().getEntryWaitAmbStat().clear();        // NOVÉ
-		myAgent().getEntryWaitWalkInStat().clear();     // NOVÉ
-		myAgent().getTreatmentWaitAmbStat().clear();    // NOVÉ
-		myAgent().getTreatmentWaitWalkInStat().clear(); // NOVÉ
-
-		// 2. Časovo-vážené štatistiky (TimeStat) - vyžadujú currentTime()
-		double now = mySim().currentTime();
-		myAgent().getNurseUtilizationStat().clear(now);
-		myAgent().getDoctorUtilizationStat().clear(now);
-		myAgent().getRoomAUtilizationStat().clear(now);
-		myAgent().getRoomBUtilizationStat().clear(now);
-		myAgent().getEntryQueueLengthStat().clear(now);     // NOVÉ
-		myAgent().getTreatmentQueueLengthStat().clear(now); // NOVÉ
-	}
 
 }
