@@ -132,8 +132,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 		updateResourceUtilization();
 	}
 
-	//vygenerovane pomocou AI
-	//vygenerovane pomocou AI
+	//vygenerovane pomocou AI a postupne doplnane podla potrieb
 	private void checkQueues() {
 		boolean changed = true;
 		MySimulation sim = (MySimulation) mySim();
@@ -271,7 +270,7 @@ public class ManagerZdrojov extends OSPABA.Manager
 				myAgent().setFreeAmbulancesB(myAgent().getFreeAmbulancesB() - 1);
 
 				msg.getPatient().setStartTimeExam(mySim().currentTime());
-				msg.getPatient().setStav("Vyšetruje sa na Vstupe (Amb. B)");
+				msg.getPatient().setStav("Vyšetruje sa na Vstup. (Amb. B)");
 
 				java.awt.Point pos = sim.zamkniVizualnuAmbulanciu("B");
 				msg.getPatient().setVisualAmbPosition(pos);

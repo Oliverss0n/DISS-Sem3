@@ -137,7 +137,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         // Vytvorenie GUI okna
         setTitle("Nemocnica - Urgentný príjem");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(1000, 800);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Okno sa otvorí na celú obrazovku
 
         sim.setLogger(msg -> {
             SwingUtilities.invokeLater(() -> {
@@ -153,14 +153,39 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JSplitPane tableLogSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTablePanel(), buildLogPanel());
         tableLogSplit.setResizeWeight(0.5);
 
+        // ==========================================
+        // VYLEPŠENÝ PANEL ANIMÁCIE S TLAČIDLOM
+        // ==========================================
         animationPanel = new JPanel(new BorderLayout());
-        animationPanel.setBorder(BorderFactory.createTitledBorder("Mapa Urgentu"));
         animationPanel.add(new JLabel("Animácia je vypnutá", SwingConstants.CENTER), BorderLayout.CENTER);
 
-        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableLogSplit, animationPanel);
+        JPanel animWrapperPanel = new JPanel(new BorderLayout());
+        animWrapperPanel.setBorder(BorderFactory.createTitledBorder("Mapa Urgentu"));
+
+        // Horná lišta pre animáciu s tlačidlom
+        JPanel animTopBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JToggleButton btnToggleAnim = new JToggleButton("Rozšíriť animáciu na maximum");
+        btnToggleAnim.setFocusPainted(false);
+        btnToggleAnim.addActionListener(e -> {
+            if (btnToggleAnim.isSelected()) {
+                mainSplit.setDividerLocation(0); // Skryje ľavú časť (tabuľky)
+                topPanel.setVisible(false);      // TOTO PRIDAJ: Skryje celý horný panel (štatistiky a ovládanie)
+                btnToggleAnim.setText("Vrátiť pôvodné zobrazenie");
+            } else {
+                mainSplit.setDividerLocation(500); // Vráti rozdeľovač do stredu
+                topPanel.setVisible(true);         // TOTO PRIDAJ: Vráti horný panel späť
+                btnToggleAnim.setText("Rozšíriť animáciu na maximum");
+            }
+        });
+        animTopBar.add(btnToggleAnim);
+        animWrapperPanel.add(animTopBar, BorderLayout.NORTH);
+        animWrapperPanel.add(animationPanel, BorderLayout.CENTER);
+
+        // Hlavný rozdeľovač (Tabuľky vs Animácia)
+        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableLogSplit, animWrapperPanel);
         mainSplit.setResizeWeight(0.5);
         mainSplit.setDividerLocation(500);
-        mainSplit.setOneTouchExpandable(true);
+        mainSplit.setOneTouchExpandable(true); // Pridá malé šípky na manuálne zbalenie
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -172,7 +197,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         // --- PRIDANIE ZÁLOŽIEK (TABS) ---
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Hlavná Simulácia", mainPanel);
-        tabbedPane.addTab("Graf Zahrievania (Eyeballing)", buildWarmUpPanel());
+        tabbedPane.addTab("Graf Zahrievania", buildWarmUpPanel());
         tabbedPane.addTab("Analýza Citlivosti", buildSensitivityPanel());
         tabbedPane.addTab("Graf Ustaľovania", buildSettlingPanel());
 
@@ -191,7 +216,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         cbVisualMode = new JCheckBox("Vizuálny režim", true);
         cbAnimation = new JCheckBox("Animácia", false);
 
-        String[] varianty = {"0 - Základný model", "1 - Ochrana posl. lekára", "2 - Dedikovaná sestra"};
+        String[] varianty = {"0 - Základný model", "1 - Posledný lekár pre prio 1,2", "2 - Rezervovaná sestra na vstup."};
         cbVariantSelect = new JComboBox<>(varianty);
         p.add(new JLabel("Variant:"));
         p.add(cbVariantSelect);
@@ -404,7 +429,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         // --- HORNÝ PANEL (Rýchly graf) ---
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenia grafu (rýchly náhľad)"));
+        topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenia grafu"));
 
         cbGraphTyp = new JComboBox<>(moznosti);
         tfGraphStart = new JTextField("3", 3);
@@ -428,14 +453,14 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         // --- SPODNÝ PANEL (Hromadný export) ---
         JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        exportPanel.setBorder(BorderFactory.createTitledBorder("Hromadný export (Detailná analýza do CSV)"));
+        exportPanel.setBorder(BorderFactory.createTitledBorder("Experiment"));
 
         tfExpDocStart = new JTextField("2", 3);
         tfExpDocEnd = new JTextField("6", 3);
         tfExpNursStart = new JTextField("3", 3);
         tfExpNursEnd = new JTextField("8", 3);
         tfExpReps = new JTextField("50", 4); // Odporúčam začať s 50 rep. pre rýchlejší test
-        btnExperiment = new JButton("Spustiť Grid Search (CSV)");
+        btnExperiment = new JButton("Spustiť Export (CSV)");
         btnExperiment.setBackground(new Color(230, 240, 255));
 
         exportPanel.add(new JLabel("Lekári Od:")); exportPanel.add(tfExpDocStart);
@@ -540,7 +565,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         int reps = Integer.parseInt(tfExpReps.getText());
 
         new Thread(() -> {
-            String filename = "grid_search_vysledky.csv";
+            String filename = "export.csv";
 
             try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(filename))) {
 
@@ -599,13 +624,13 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 // Vytvorenie finálnej hlášky podľa toho, či sa našlo riešenie
                 String finalMsg;
                 if (bestDocs != -1) {
-                    finalMsg = "Grid Search bol dokončený!\n\n" +
+                    finalMsg = "Export bol dokončený!\n\n" +
                             "Najlepšia zistená konfigurácia:\n" +
                             "Lekári: " + bestDocs + "\n" +
                             "Sestry: " + bestNurs + "\n\n" +
                             "Všetky dáta nájdete v súbore: " + filename;
                 } else {
-                    finalMsg = "Grid Search dokončený!\n\nŽiadna z testovaných kombinácií NESPLNILA podmienky.\nSkúste zvýšiť počty personálu.";
+                    finalMsg = "Export dokončený!\n\nŽiadna z testovaných kombinácií NESPLNILA podmienky.\nSkúste zvýšiť počty personálu.";
                 }
 
                 SwingUtilities.invokeLater(() -> {
@@ -692,7 +717,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         // 1. Okamžitý stav (Práve teraz)
         JPanel curStatusPanel = new JPanel(new GridLayout(3, 2, 5, 5));
-        curStatusPanel.setBorder(BorderFactory.createTitledBorder("Okamžitý stav (Práve teraz)"));
+        curStatusPanel.setBorder(BorderFactory.createTitledBorder("Aktuálny stav"));
 
         lblCurQueueEntrance = new JLabel("Rad na vstup: 0");
         lblCurQueueExam = new JLabel("Rad na ošetrenie: 0");
