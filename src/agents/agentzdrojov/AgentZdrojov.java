@@ -27,7 +27,6 @@ public class AgentZdrojov extends OSPABA.Agent
 	private PriorityQueue<MessageForm> queueExaminationA;
 	private PriorityQueue<MessageForm> queueExaminationB;
 
-	// Namiesto: private int freeNurses; a private int freeDoctors;
 	private Queue<Nurse> freeNurses = new LinkedList<>();
 	private Queue<Doctor> freeDoctors = new LinkedList<>();
 
@@ -70,33 +69,27 @@ public class AgentZdrojov extends OSPABA.Agent
 		super.prepareReplication();
 		MySimulation sim = (MySimulation) mySim();
 
-		// 1. Vytvorenie a prepojenie sestier
 		freeNurses.clear();
 		for (int i = 0; i < sim.getNumNurses(); i++) {
 			entities.Nurse n = new entities.Nurse(i + 1);
-			// Ak je zapnutá animácia, prepojíme logickú sestru s grafickým trojuholníkom
 			if (sim.animatorExists() && sim.grafikaSestier != null && i < sim.grafikaSestier.length) {
 				n.setAnimItem(sim.grafikaSestier[i]);
 			}
 			freeNurses.add(n);
 		}
 
-		// 2. Vytvorenie a prepojenie lekárov
 		freeDoctors.clear();
 		for (int i = 0; i < sim.getNumDoctors(); i++) {
 			entities.Doctor d = new entities.Doctor(i + 1);
-			// Ak je zapnutá animácia, prepojíme logického lekára s grafickým štvorcom
 			if (sim.animatorExists() && sim.grafikaLekarov != null && i < sim.grafikaLekarov.length) {
 				d.setAnimItem(sim.grafikaLekarov[i]);
 			}
 			freeDoctors.add(d);
 		}
 
-		// 3. Reset kapacít
 		this.freeAmbulancesA = 5;
 		this.freeAmbulancesB = 7;
 
-		// 4. Reset vizualizácie ambulancií (aby neostali "visieť" po reštarte)
 		for (int i = 0; i < 5; i++){
 			sim.obsadeneAmbA[i] = false;
 		}
@@ -104,7 +97,6 @@ public class AgentZdrojov extends OSPABA.Agent
 			sim.obsadeneAmbB[i] = false;
 		}
 
-		// 5. Vyčistenie radov
 		this.queueEntrance.clear();
 		this.queueExaminationA.clear();
 		this.queueExaminationB.clear();

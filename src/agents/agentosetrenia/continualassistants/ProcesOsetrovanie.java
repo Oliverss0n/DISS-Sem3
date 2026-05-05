@@ -39,7 +39,6 @@ public class ProcesOsetrovanie extends OSPABA.Process
 			pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, pacient.getVisualAmbPosition().x , pacient.getVisualAmbPosition().y);
 		}
 
-		// --- PRIDAJ TÚTO POISTKU PRE FARBU PERSONÁLU ---
 		if (sim.animatorExists()) {
 			if (pacient.getAssignedDoctor() != null) pacient.getAssignedDoctor().getAnimItem().setColor(java.awt.Color.RED);
 			if (pacient.getAssignedNurse() != null) pacient.getAssignedNurse().getAnimItem().setColor(java.awt.Color.RED);
@@ -73,7 +72,6 @@ public class ProcesOsetrovanie extends OSPABA.Process
 				MySimulation sim = (MySimulation) mySim();
 				entities.Patient pacient = ((MyMessage) message).getPatient();
 				if (pacient.getAnimItem() != null) {
-					// Pošleme pacienta preč z mapy
 					pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
 				}
 				assistantFinished(message);

@@ -30,13 +30,10 @@ import OSPAnimator.AnimQueue;
 public class MainGUI extends JFrame implements ISimDelegate {
 
 
-    //private double WARMUP = 86400.0;
-    // --- Simulačné jadro a vlákno ---
+
     private MySimulation sim;
     private Thread simThread;
 
-    //private final double SIM_TIME = 2419200.0;
-    //private final double SIM_TIME = 2419200.0;
 
     // --- GUI Komponenty ---
     private JSlider speedSlider;
@@ -47,7 +44,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     // --- Štatistiky ---
     private JLabel lblCurQueueEntrance, lblCurQueueExam, lblCurFreeDoctors, lblCurFreeNurses;
-    // ZMENENÉ NÁZVY A PRIDANÉ NOVÉ LABELy PRE VYŤAŽENIE:
     private JLabel lblGlobReplications, lblGlobAvgWaitAmbulance, lblGlobAvgWaitWalkIn, lblGlobUtilNurses, lblGlobUtilDoctors;
     private JLabel lblGlobUtilRoomA, lblGlobUtilRoomB;
     private JLabel lblGlobTotalPatients, lblGlobTotalWalkIn, lblGlobTotalAmb;
@@ -76,48 +72,42 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
     private JLabel lblAmbAStatus, lblAmbBStatus;
 
-    //zahrievanie:
+
     private XYSeries eyeballingSeries;
     private JTextField tfEyeballingStep, tfEyeballingReps;
 
-    // --- PREMENNÉ PRE ANALÝZU CITLIVOSTI ---
+
     private XYSeries seriesWaitAmb, seriesWaitWalkIn;
 
-    // Horný panel (Rýchly graf)
+
     private JTextField tfGraphStart, tfGraphEnd, tfGraphFixed, tfGraphReps;
     private JComboBox<String> cbGraphTyp;
     private JButton btnDrawGraph;
 
-    // Dolný panel (Hromadný CSV export)
+
     private JTextField tfExpDocStart, tfExpDocEnd, tfExpNursStart, tfExpNursEnd, tfExpReps;
     private JButton btnExperiment;
 
     private JComboBox<String> cbVariantSelect;
 
-    // --- Graf ustaľovania ---
+
     private XYSeries seriesUstalovanieAmb;
     private XYSeries seriesUstalovaniePesi;
 
     private JTextField tfSettlingReps;
     private JButton btnDrawSettling;
 
-    // --- LOKÁLNE ŠTATISTIKY (Nové premenné) ---
-    // Časy
+    // --- LOKÁLNE ŠTATISTIKY ---
     private JLabel lblLocTimeInSysAmb, lblLocTimeInSysWalkIn;
     private JLabel lblLocAvgWaitAmb, lblLocAvgWaitWalkIn;
     private JLabel lblLocEntryWaitAmb, lblLocEntryWaitWalk;
     private JLabel lblLocTreatWaitAmb, lblLocTreatWaitWalk;
-    // Rady
     private JLabel lblLocEntryQueue, lblLocTreatQueue;
-    // Vyťaženosť
     private JLabel lblLocUtilNurses, lblLocUtilDoctors;
     private JLabel lblLocUtilRoomA, lblLocUtilRoomB;
-    // Počty
     private JLabel lblLocTotalPatients, lblLocTotalWalkIn, lblLocTotalAmb;
 
-    // --- Štatistiky ---
     public MainGUI() {
-        // Inicializácia jadra
         sim = new MySimulation();
         java.io.OutputStream out = new java.io.OutputStream() {
             @Override
@@ -134,10 +124,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
         System.setErr(new java.io.PrintStream(out, true));
         sim.registerDelegate(this);
 
-        // Vytvorenie GUI okna
-        setTitle("Nemocnica - Urgentný príjem");
+        setTitle("Nemocnica");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Okno sa otvorí na celú obrazovku
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         sim.setLogger(msg -> {
             SwingUtilities.invokeLater(() -> {
@@ -153,27 +142,23 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JSplitPane tableLogSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildTablePanel(), buildLogPanel());
         tableLogSplit.setResizeWeight(0.5);
 
-        // ==========================================
-        // VYLEPŠENÝ PANEL ANIMÁCIE S TLAČIDLOM
-        // ==========================================
         animationPanel = new JPanel(new BorderLayout());
         animationPanel.add(new JLabel("Animácia je vypnutá", SwingConstants.CENTER), BorderLayout.CENTER);
 
         JPanel animWrapperPanel = new JPanel(new BorderLayout());
         animWrapperPanel.setBorder(BorderFactory.createTitledBorder("Mapa Urgentu"));
 
-        // Horná lišta pre animáciu s tlačidlom
         JPanel animTopBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         JToggleButton btnToggleAnim = new JToggleButton("Rozšíriť animáciu na maximum");
         btnToggleAnim.setFocusPainted(false);
         btnToggleAnim.addActionListener(e -> {
             if (btnToggleAnim.isSelected()) {
-                mainSplit.setDividerLocation(0); // Skryje ľavú časť (tabuľky)
-                topPanel.setVisible(false);      // TOTO PRIDAJ: Skryje celý horný panel (štatistiky a ovládanie)
+                mainSplit.setDividerLocation(0);
+                topPanel.setVisible(false);
                 btnToggleAnim.setText("Vrátiť pôvodné zobrazenie");
             } else {
-                mainSplit.setDividerLocation(500); // Vráti rozdeľovač do stredu
-                topPanel.setVisible(true);         // TOTO PRIDAJ: Vráti horný panel späť
+                mainSplit.setDividerLocation(500);
+                topPanel.setVisible(true);
                 btnToggleAnim.setText("Rozšíriť animáciu na maximum");
             }
         });
@@ -181,11 +166,10 @@ public class MainGUI extends JFrame implements ISimDelegate {
         animWrapperPanel.add(animTopBar, BorderLayout.NORTH);
         animWrapperPanel.add(animationPanel, BorderLayout.CENTER);
 
-        // Hlavný rozdeľovač (Tabuľky vs Animácia)
         mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableLogSplit, animWrapperPanel);
         mainSplit.setResizeWeight(0.5);
         mainSplit.setDividerLocation(500);
-        mainSplit.setOneTouchExpandable(true); // Pridá malé šípky na manuálne zbalenie
+        mainSplit.setOneTouchExpandable(true);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -194,7 +178,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         sim.setLogEnabled(cbVisualMode.isSelected());
 
-        // --- PRIDANIE ZÁLOŽIEK (TABS) ---
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Hlavná Simulácia", mainPanel);
         tabbedPane.addTab("Graf Zahrievania", buildWarmUpPanel());
@@ -250,7 +233,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
             updateSimSpeed();
             sim.setLogEnabled(cbVisualMode.isSelected());
 
-            // Dynamické zapnutie/vypnutie animátora podľa stavu checkboxu
             if (cbAnimation.isSelected()) {
                 if (!sim.animatorExists()) {
                     sim.createAnimator();
@@ -265,7 +247,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 }
             } else {
                 if (sim.animatorExists()) {
-                    sim.removeAnimator(); // Toto natvrdo odpojí animátor od simulačného jadra
+                    sim.removeAnimator();
 
                     animationPanel.removeAll();
                     animationPanel.add(new JLabel("Animácia je vypnutá (Turbomód)", SwingConstants.CENTER), BorderLayout.CENTER);
@@ -311,13 +293,12 @@ public class MainGUI extends JFrame implements ISimDelegate {
         warmUpControls.add(btnRunEyeballing);
         warmUpPanel.add(warmUpControls, BorderLayout.NORTH);
 
-        // ZMENA TU: Názvy série a osí
         eyeballingSeries = new XYSeries("Priemerný počet osôb v radoch");
         XYSeriesCollection eyeballingDataset = new XYSeriesCollection(eyeballingSeries);
         JFreeChart eyeballingChart = ChartFactory.createXYLineChart(
                 "Sledovanie ustáleného stavu (Zahrievanie)",
                 "Simulačný čas (hodiny)",
-                "Priemerný počet osôb v radoch", // <--- Os Y
+                "Priemerný počet osôb v radoch",
                 eyeballingDataset, PlotOrientation.VERTICAL, true, true, false
         );
 
@@ -326,7 +307,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         return warmUpPanel;
     }
 
-    //vygenerovane pomocou AI pomocou inspiracie z predoslej semestralky
+    //vygenerovane pomocou AI pomocou inspiracie kodom z predoslej semestralky
     private void runEyeballingObservation() {
         btnStart.setEnabled(false);
         eyeballingSeries.clear();
@@ -334,23 +315,18 @@ public class MainGUI extends JFrame implements ISimDelegate {
         int step = Integer.parseInt(tfEyeballingStep.getText());
         int numReps = Integer.parseInt(tfEyeballingReps.getText());
 
-        // Simulujeme 4 týždne (28 dní = 2 419 200 sekúnd)
         double maxTime = 2419200.0;
         int numSteps = (int) (maxTime / step) + 1;
 
-        // Pole na sčítavanie počtu pacientov pre daný časový krok naprieč replikáciami
         double[] eyeballingSums = new double[numSteps];
 
-        // Vytvoríme inštanciu jadra čisto pre zber dát
+
         MySimulation eyeballingSim = new MySimulation();
         eyeballingSim.setWarmUpTime(0);
         eyeballingSim.setNumDoctors(Integer.parseInt(tfDoctors.getText()));
         eyeballingSim.setNumNurses(Integer.parseInt(tfNurses.getText()));
 
         eyeballingSim.setVariant(cbVariantSelect.getSelectedIndex());
-        // TOTO JE TEN TRIK:
-        // Povieme OSPABE: Každých 'step' (3600) sekúnd zavolaj refresh() a zastav sa na smiešnu 0.001 sekundy.
-        // Takto jadro beží takmer rýchlosťou turbomódu, ale GUI vie pravidelne a presne zbierať dáta.
         eyeballingSim.setSimSpeed(step, 0.001);
 
         final int[] lastUpdatedIndex = {-1};
@@ -361,16 +337,14 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 MySimulation mySim = (MySimulation) simulation;
                 int index = (int) (mySim.currentTime() / step);
 
-                // Zaznamenáme stav LEN AK sme sa posunuli do novej hodiny
                 if (index < numSteps && index > lastUpdatedIndex[0]) {
                     eyeballingSums[index] += mySim.getActivePatients().size();
-                    lastUpdatedIndex[0] = index; // Zapamätáme si, že túto hodinu sme už vybavili
+                    lastUpdatedIndex[0] = index;
                 }
             }
 
             @Override
             public void simStateChanged(Simulation simulation, SimState simState) {
-                // Na konci replikácie resetujeme počítadlo pre ďalšiu replikáciu
                 if (simState == SimState.replicationStopped) {
                     lastUpdatedIndex[0] = -1;
                 }
@@ -381,20 +355,17 @@ public class MainGUI extends JFrame implements ISimDelegate {
             }
         });
 
-        // Spustíme experiment v novom vlákne
         new Thread(() -> {
             eyeballingSim.simulate(numReps, maxTime);
         }).start();
     }
 
     private void processAndDrawEyeballing(double[] sums, int numSteps, int numReps, int step) {
-        int windowSize = 100; // Kĺzavý priemer pre vyhladenie zubov v grafe
+        int windowSize = 100;
 
         for (int i = 0; i < numSteps; i++) {
-            // Najprv urobíme priemer cez všetky zbehnuté replikácie
             sums[i] = sums[i] / numReps;
 
-            // Výpočet kĺzavého priemeru (prevzaté z tvojho starého kódu)
             double smoothedValue;
             if (i >= windowSize - 1) {
                 double windowSum = 0;
@@ -410,7 +381,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 smoothedValue = tempSum / (i + 1);
             }
 
-            // X-os = čas v hodinách, Y-os = vyhladený počet pacientov
             final double finalTime = (i * step) / 3600.0;
             final double finalAvg = smoothedValue;
 
@@ -427,7 +397,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         String[] moznosti = {"Meniť počet LEKÁROV (Sestry pevné)", "Meniť počet SESTIER (Lekári pevní)"};
 
-        // --- HORNÝ PANEL (Rýchly graf) ---
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenia grafu"));
 
@@ -451,7 +420,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         btnDrawGraph.addActionListener(e -> runGraphExperiment());
 
-        // --- SPODNÝ PANEL (Hromadný export) ---
         JPanel exportPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         exportPanel.setBorder(BorderFactory.createTitledBorder("Experiment"));
 
@@ -459,7 +427,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
         tfExpDocEnd = new JTextField("6", 3);
         tfExpNursStart = new JTextField("3", 3);
         tfExpNursEnd = new JTextField("8", 3);
-        tfExpReps = new JTextField("50", 4); // Odporúčam začať s 50 rep. pre rýchlejší test
+        tfExpReps = new JTextField("50", 4);
         btnExperiment = new JButton("Spustiť Export (CSV)");
         btnExperiment.setBackground(new Color(230, 240, 255));
 
@@ -475,13 +443,11 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         btnExperiment.addActionListener(e -> runExportExperiment());
 
-        // --- ZLOŽENIE OVLÁDACÍCH PANELOV ---
         JPanel combinedTop = new JPanel(new GridLayout(2, 1));
         combinedTop.add(topPanel);
         combinedTop.add(exportPanel);
         panel.add(combinedTop, BorderLayout.NORTH);
 
-        // --- GRAF ---
         seriesWaitAmb = new XYSeries("Priemerný čas - Sanitky (min)");
         seriesWaitWalkIn = new XYSeries("Priemerný čas - Peší (min)");
 
@@ -569,14 +535,12 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
             try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(filename))) {
 
-                // Hlavička CSV s novým stĺpcom pre celkový súčet personálu
                 writer.println("Lekari;Sestry;Personal Spolu;Cakanie Sanitky (min);Cakanie Pesi (min);Vytazenie Lekari (%);Vytazenie Sestry (%);Splna zadanie?");
 
                 int minSpolu = Integer.MAX_VALUE;
                 int bestDocs = -1;
                 int bestNurs = -1;
 
-                // 2 CYKLY: Prechádzame všetky kombinácie lekárov a sestier
                 for (int d = docStart; d <= docEnd; d++) {
                     for (int s = nursStart; s <= nursEnd; s++) {
 
@@ -588,7 +552,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
                         expSim.setSimSpeed(0, 0);
                         expSim.setMaxSimSpeed();
 
-                        expSim.simulate(reps, sim.getSimTime()); // 28 dní
+                        expSim.simulate(reps, sim.getSimTime());
 
                         double avgAmbMins = expSim.getGlobalWaitAmbStat().getMean() / 60.0;
                         double avgWalkMins = expSim.getGlobalWaitWalkInStat().getMean() / 60.0;
@@ -599,7 +563,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
                         String vysledokPodmienky = splnaPodmienku ? "PRAVDA" : "NEPRAVDA";
                         int personalSpolu = d + s;
 
-                        // Ak splní podmienku a použili sme menej personálu ako doteraz, zapamätáme si to
                         if (splnaPodmienku && personalSpolu < minSpolu) {
                             minSpolu = personalSpolu;
                             bestDocs = d;
@@ -612,7 +575,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
                         writer.println(csvLine);
 
-                        // Nepovinné: Aktualizuj graf čisto vizuálne pre nejaký progres (len súčet personálu)
                         final int sum = personalSpolu;
                         SwingUtilities.invokeLater(() -> {
                             seriesWaitAmb.addOrUpdate((Number) sum, avgAmbMins);
@@ -621,7 +583,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
                     }
                 }
 
-                // Vytvorenie finálnej hlášky podľa toho, či sa našlo riešenie
                 String finalMsg;
                 if (bestDocs != -1) {
                     finalMsg = "Export bol dokončený!\n\n" +
@@ -648,10 +609,8 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private void updateGlobalStatsGUI() {
         if (sim == null) return;
 
-        // Update počítadla replikácií
         lblGlobReplications.setText("Replications: " + sim.currentReplication());
 
-        // --- 1. BLOK: ČASY (Všetko v minútach s IS) ---
         lblGlobTimeInSysAmb.setText(String.format("Cas v systeme (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalTimeInSystemAmbStat().getMean() / 60.0, sim.getGlobalTimeInSystemAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTimeInSystemAmbStat().getConfidenceIntervalUpper() / 60.0));
         lblGlobTimeInSysWalkIn.setText(String.format("Cas v systeme (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalTimeInSystemWalkInStat().getMean() / 60.0, sim.getGlobalTimeInSystemWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTimeInSystemWalkInStat().getConfidenceIntervalUpper() / 60.0));
 
@@ -664,12 +623,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
         lblGlobTreatWaitAmb.setText(String.format("Cakanie OŠETRENIE (Sanitky): %.2f min <%.2f, %.2f>", sim.getGlobalTreatmentWaitAmbStat().getMean() / 60.0, sim.getGlobalTreatmentWaitAmbStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTreatmentWaitAmbStat().getConfidenceIntervalUpper() / 60.0));
         lblGlobTreatWaitWalk.setText(String.format("Cakanie OŠETRENIE (Peší): %.2f min <%.2f, %.2f>", sim.getGlobalTreatmentWaitWalkInStat().getMean() / 60.0, sim.getGlobalTreatmentWaitWalkInStat().getConfidenceIntervalLower() / 60.0, sim.getGlobalTreatmentWaitWalkInStat().getConfidenceIntervalUpper() / 60.0));
 
-        // --- 2. BLOK: RADY (v osobách s IS) ---
         lblGlobEntryQueue.setText(String.format("Rad Vstup (osoby): %.2f <%.2f, %.2f>", sim.getGlobalEntryQueueLengthStat().getMean(), sim.getGlobalEntryQueueLengthStat().getConfidenceIntervalLower(), sim.getGlobalEntryQueueLengthStat().getConfidenceIntervalUpper()));
         lblGlobTreatQueue.setText(String.format("Rad Ošetrenie (osoby): %.2f <%.2f, %.2f>", sim.getGlobalTreatmentQueueLengthStat().getMean(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalLower(), sim.getGlobalTreatmentQueueLengthStat().getConfidenceIntervalUpper()));
 
-        // --- 3. BLOK: VYŤAŽENOSŤ (% s IS) ---
-        // --- 3. BLOK: VYŤAŽENOSŤ (% s IS) ---
         double totalNurses = sim.getNumNurses();
         double uNur = sim.getGlobalUtilNursesStat().getMean();
         double uNurLow = sim.getGlobalUtilNursesStat().getConfidenceIntervalLower();
@@ -701,7 +657,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 (sim.getGlobalRoomBUtilStat().getMean() / 7.0) * 100,
                 (uRoomBLow / 7.0) * 100,
                 (uRoomBHigh / 7.0) * 100));
-        // --- 4. BLOK: PRIECHODNOSŤ (v osobách s IS) ---
+
         lblGlobTotalPatients.setText(String.format("Vybavení pacienti: %.1f <%.1f, %.1f>", sim.getGlobalTotalPatientsStat().getMean(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalLower(), sim.getGlobalTotalPatientsStat().getConfidenceIntervalUpper()));
         lblGlobTotalWalkIn.setText(String.format(" - Z toho Peší: %.1f <%.1f, %.1f>", sim.getGlobalTotalWalkInStat().getMean(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalLower(), sim.getGlobalTotalWalkInStat().getConfidenceIntervalUpper()));
         lblGlobTotalAmb.setText(String.format(" - Z toho Sanitky: %.1f <%.1f, %.1f>", sim.getGlobalTotalAmbStat().getMean(), sim.getGlobalTotalAmbStat().getConfidenceIntervalLower(), sim.getGlobalTotalAmbStat().getConfidenceIntervalUpper()));
@@ -710,12 +666,8 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JPanel buildStatsPanel() {
         JPanel p = new JPanel(new GridLayout(1, 2, 10, 10));
 
-        // ==========================================
-        // ĽAVÁ STRANA - OKAMŽITÝ STAV A LOKÁLNE ŠTAT.
-        // ==========================================
         JPanel leftSide = new JPanel(new BorderLayout(5, 5));
 
-        // 1. Okamžitý stav (Práve teraz)
         JPanel curStatusPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         curStatusPanel.setBorder(BorderFactory.createTitledBorder("Aktuálny stav"));
 
@@ -730,11 +682,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
         curStatusPanel.add(lblCurFreeDoctors); curStatusPanel.add(lblCurFreeNurses);
         curStatusPanel.add(lblAmbAStatus); curStatusPanel.add(lblAmbBStatus);
 
-        // 2. Lokálne štatistiky (4 bloky)
         JPanel mainLocPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         mainLocPanel.setBorder(BorderFactory.createTitledBorder("Lokálne štatistiky (Aktuálna replikácia)"));
 
-        // Blok 1: Časy
         JPanel pnlLocTimes = new JPanel(new GridLayout(0, 1));
         pnlLocTimes.setBorder(BorderFactory.createTitledBorder("Časy (minúty)"));
         lblLocTimeInSysAmb = new JLabel("Systém (Sanitky): -");
@@ -750,14 +700,12 @@ public class MainGUI extends JFrame implements ISimDelegate {
         pnlLocTimes.add(lblLocEntryWaitAmb); pnlLocTimes.add(lblLocEntryWaitWalk);
         pnlLocTimes.add(lblLocTreatWaitAmb); pnlLocTimes.add(lblLocTreatWaitWalk);
 
-        // Blok 2: Rady
         JPanel pnlLocQueues = new JPanel(new GridLayout(0, 1));
         pnlLocQueues.setBorder(BorderFactory.createTitledBorder("Rady (Priemerná dĺžka)"));
         lblLocEntryQueue = new JLabel("Rad na Vstup: -");
         lblLocTreatQueue = new JLabel("Rad na Ošetrenie: -");
         pnlLocQueues.add(lblLocEntryQueue); pnlLocQueues.add(lblLocTreatQueue);
 
-        // Blok 3: Vyťaženosť
         JPanel pnlLocUtils = new JPanel(new GridLayout(0, 1));
         pnlLocUtils.setBorder(BorderFactory.createTitledBorder("Vyťaženosť (%)"));
         lblLocUtilNurses = new JLabel("Sestry: -");
@@ -767,7 +715,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         pnlLocUtils.add(lblLocUtilNurses); pnlLocUtils.add(lblLocUtilDoctors);
         pnlLocUtils.add(lblLocUtilRoomA); pnlLocUtils.add(lblLocUtilRoomB);
 
-        // Blok 4: Priechodnosť
         JPanel pnlLocCounts = new JPanel(new GridLayout(0, 1));
         pnlLocCounts.setBorder(BorderFactory.createTitledBorder("Vybavení pacienti"));
         lblLocTotalPatients = new JLabel("Spolu: -");
@@ -783,13 +730,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
         leftSide.add(curStatusPanel, BorderLayout.NORTH);
         leftSide.add(mainLocPanel, BorderLayout.CENTER);
 
-        // ==========================================
-        // PRAVÁ STRANA - GLOBÁLNE ŠTATISTIKY
-        // ==========================================
         JPanel mainGlobPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         mainGlobPanel.setBorder(BorderFactory.createTitledBorder("Globálne štatistiky"));
 
-        // BLOK 1: ČASY
         JPanel pnlTimes = new JPanel(new GridLayout(0, 1));
         pnlTimes.setBorder(BorderFactory.createTitledBorder("Časy (minúty)"));
         lblGlobTimeInSysAmb = new JLabel("Systém (Sanitky): -");
@@ -805,7 +748,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         pnlTimes.add(lblGlobEntryWaitAmb); pnlTimes.add(lblGlobEntryWaitWalk);
         pnlTimes.add(lblGlobTreatWaitAmb); pnlTimes.add(lblGlobTreatWaitWalk);
 
-        // BLOK 2: RADY + INFO
         JPanel pnlQueues = new JPanel(new GridLayout(0, 1));
         pnlQueues.setBorder(BorderFactory.createTitledBorder("Rady a Info"));
         lblGlobReplications = new JLabel("Replikácie: 0");
@@ -815,7 +757,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         pnlQueues.add(lblGlobEntryQueue);
         pnlQueues.add(lblGlobTreatQueue);
 
-        // BLOK 3: VYŤAŽENOSŤ
         JPanel pnlUtils = new JPanel(new GridLayout(0, 1));
         pnlUtils.setBorder(BorderFactory.createTitledBorder("Vyťaženosť (%)"));
         lblGlobUtilNurses = new JLabel("Sestry: -");
@@ -825,7 +766,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         pnlUtils.add(lblGlobUtilNurses); pnlUtils.add(lblGlobUtilDoctors);
         pnlUtils.add(lblGlobUtilRoomA); pnlUtils.add(lblGlobUtilRoomB);
 
-        // BLOK 4: PRIECHODNOSŤ
         JPanel pnlCounts = new JPanel(new GridLayout(0, 1));
         pnlCounts.setBorder(BorderFactory.createTitledBorder("Vybavení pacienti"));
         lblGlobTotalPatients = new JLabel("Spolu: -");
@@ -900,7 +840,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
             sim = new MySimulation();
 
-            // Do runSim():
             sim.setVariant(cbVariantSelect.getSelectedIndex());
 
             sim.registerDelegate(this);
@@ -991,7 +930,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // --- HORNÝ OVLÁDACÍ PANEL ---
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topPanel.setBorder(BorderFactory.createTitledBorder("Nastavenie experimentu"));
 
@@ -1006,7 +944,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
         btnDrawSettling.addActionListener(e -> runSettlingExperiment());
         panel.add(topPanel, BorderLayout.NORTH);
 
-        // --- GRAF ---
         seriesUstalovanieAmb = new XYSeries("Priemerné čakanie - Sanitky (min)");
         seriesUstalovaniePesi = new XYSeries("Priemerné čakanie - Peší (min)");
 
@@ -1025,17 +962,14 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
         org.jfree.chart.plot.XYPlot plot = chart.getXYPlot();
 
-        // Os X (Replikácie) - adaptívne škálovanie
         org.jfree.chart.axis.NumberAxis xAxis = (org.jfree.chart.axis.NumberAxis) plot.getDomainAxis();
         xAxis.setAutoRange(true);
-        xAxis.setAutoRangeIncludesZero(false); // Nenúti os X začínať od nuly
+        xAxis.setAutoRangeIncludesZero(false);
 
-        // Os Y (Čakanie v minútach) - adaptívne škálovanie s okrajmi
         org.jfree.chart.axis.NumberAxis yAxis = (org.jfree.chart.axis.NumberAxis) plot.getRangeAxis();
         yAxis.setAutoRange(true);
-        yAxis.setAutoRangeIncludesZero(false); // Dovolí osi Y priblížiť sa na reálne hodnoty (napr. 14 až 16 minút)
+        yAxis.setAutoRangeIncludesZero(false);
 
-        // Pridanie 10% okraja hore a dole, aby graf nebol nalepený na hranách
         yAxis.setUpperMargin(0.05);
         yAxis.setLowerMargin(0.05);
 
@@ -1061,7 +995,7 @@ public class MainGUI extends JFrame implements ISimDelegate {
             settleSim.setVariant(variant);
             settleSim.setNumDoctors(docs);
             settleSim.setNumNurses(nurses);
-            //settleSim.setWarmUpTime(WARMUP); // Ak používaš globálnu konštantu
+            //settleSim.setWarmUpTime(WARMUP);
             settleSim.setSimSpeed(0, 0);
             settleSim.setMaxSimSpeed();
 
@@ -1070,9 +1004,8 @@ public class MainGUI extends JFrame implements ISimDelegate {
                 public void simStateChanged(Simulation simulation, SimState simState) {
                     if (simState == SimState.replicationStopped) {
                         MySimulation ms = (MySimulation) simulation;
-                        int repNum = ms.currentReplication(); // BEZ +1 !
+                        int repNum = ms.currentReplication();
 
-                        // repNum=0 → globalStat je prázdny → preskočíme
                         if (repNum < 1) return;
 
                         double actMeanAmb = ms.getGlobalWaitAmbStat().getMean() / 60.0;
@@ -1087,11 +1020,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
                 @Override
                 public void refresh(Simulation simulation) {
-                    // Tu nepotrebujeme robiť nič
                 }
             });
 
-            // Spustenie na zvolený počet replikácií a čas 28 dní
             settleSim.simulate(reps, 2419200.0);
 
             SwingUtilities.invokeLater(() -> {
@@ -1110,11 +1041,11 @@ public class MainGUI extends JFrame implements ISimDelegate {
             switch (simState) {
                 case replicationStopped:
                     lblGlobReplications.setText("Replikácia: " + (sim.currentReplication() + 1));
-                    updateGlobalStatsGUI(); // Aktualizácia v turbomóde po každej replikácii
+                    updateGlobalStatsGUI();
                     break;
                 case stopped:
                     btnStart.setText("Spustiť");
-                    updateGlobalStatsGUI(); // Finálna aktualizácia po skončení všetkých replikácií
+                    updateGlobalStatsGUI();
                     break;
                 case running:
                 case replicationRunning:
@@ -1190,11 +1121,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
             MySimulation mySim = (MySimulation) smltn;
 
-            // ========================================================
-            // SPRÁVNE VOLANIA LOKÁLNYCH ŠTATISTÍK PRE UI
-            // ========================================================
-
-            // --- 1. BLOK: Časy (zobrazujeme priemer bežiacej replikácie) ---
             lblLocTimeInSysAmb.setText(String.format("Systém (Sanitky): %.2f min", mySim.agentZdrojov().getTimeInSystemAmbStat().getMean() / 60.0));
             lblLocTimeInSysWalkIn.setText(String.format("Systém (Peší): %.2f min", mySim.agentZdrojov().getTimeInSystemWalkInStat().getMean() / 60.0));
 
@@ -1207,11 +1133,9 @@ public class MainGUI extends JFrame implements ISimDelegate {
             lblLocTreatWaitAmb.setText(String.format("Čak. OŠETRENIE (Sanitky): %.2f min", mySim.agentZdrojov().getTreatmentWaitAmbStat().getMean() / 60.0));
             lblLocTreatWaitWalk.setText(String.format("Čak. OŠETRENIE (Peší): %.2f min", mySim.agentZdrojov().getTreatmentWaitWalkInStat().getMean() / 60.0));
 
-            // --- 2. BLOK: Rady (priemerná dĺžka počas bežiacej replikácie) ---
             lblLocEntryQueue.setText(String.format("Rad na Vstup: %.2f", mySim.agentZdrojov().getEntryQueueLengthStat().getMean()));
             lblLocTreatQueue.setText(String.format("Rad na Ošetrenie: %.2f", mySim.agentZdrojov().getTreatmentQueueLengthStat().getMean()));
 
-            // --- 3. BLOK: Vyťaženosť ---
             double totalNurses = mySim.getNumNurses();
             double utilNursesMean = mySim.agentZdrojov().getNurseUtilizationStat().getMean();
             lblLocUtilNurses.setText(String.format("Sestry: %.2f %%", (totalNurses > 0) ? (utilNursesMean / totalNurses) * 100 : 0));
@@ -1223,8 +1147,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
             lblLocUtilRoomA.setText(String.format("Amb A (Ošetrenie): %.2f %%", (mySim.agentZdrojov().getRoomAUtilizationStat().getMean() / 5.0) * 100));
             lblLocUtilRoomB.setText(String.format("Amb B (Vstup+Ošetr.): %.2f %%", (mySim.agentZdrojov().getRoomBUtilizationStat().getMean() / 7.0) * 100));
 
-            // --- 4. BLOK: Počty (Priechodnosť) ---
-            // Počet vybavených pacientov = veľkosť vzorky štatistiky času v systéme
             int ambCount = mySim.agentZdrojov().getTimeInSystemAmbStat().getCount();
             int walkInCount = mySim.agentZdrojov().getTimeInSystemWalkInStat().getCount();
 
@@ -1235,18 +1157,16 @@ public class MainGUI extends JFrame implements ISimDelegate {
     }
 
     //pokus o animaciu - vygenerovane pomocou ai
-    //pokus o animaciu - vygenerovane pomocou ai
     private void setupAnimationEnvironment(MySimulation sim) {
         if (!sim.animatorExists()) return;
 
         try {
-            java.awt.image.BufferedImage bgImage = javax.imageio.ImageIO.read(new java.io.File("img/pozadie.png")); // uisti sa, že je to pozadie_2.png
+            java.awt.image.BufferedImage bgImage = javax.imageio.ImageIO.read(new java.io.File("img/pozadie.png"));
             sim.animator().setBackgroundImage(bgImage);
         } catch (java.io.IOException e) {
             System.err.println("Chyba pozadia: " + e.getMessage());
         }
 
-        // Sestry (Trojuholníky)
         int pocetSestier = sim.getNumNurses();
         sim.grafikaSestier = new OSPAnimator.AnimShapeItem[pocetSestier];
         for (int i = 0; i < pocetSestier; i++) {
@@ -1257,7 +1177,6 @@ public class MainGUI extends JFrame implements ISimDelegate {
             sim.animator().register(sim.grafikaSestier[i]);
         }
 
-        // Lekári (Štvorce)
         int pocetLekarov = sim.getNumDoctors();
         sim.grafikaLekarov = new OSPAnimator.AnimShapeItem[pocetLekarov];
         for (int i = 0; i < pocetLekarov; i++) {

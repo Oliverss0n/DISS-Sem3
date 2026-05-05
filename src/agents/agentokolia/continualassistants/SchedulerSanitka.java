@@ -38,7 +38,7 @@ public class SchedulerSanitka extends OSPABA.Scheduler
 		Patient newPatient = new Patient(true, mySim().currentTime());
 
 		MySimulation sim = (MySimulation) mySim();
-		//pokus o animaciu
+
 		if (sim.animatorExists()) {
 			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.YELLOW, 12);
 			anim.setPosition(300, 500);

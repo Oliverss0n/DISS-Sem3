@@ -37,7 +37,7 @@ public class SchedulerPesi extends OSPABA.Scheduler
 		Patient newPatient = new Patient(false, mySim().currentTime());
 
 		MySimulation sim = (MySimulation) mySim();
-		//pokus o animaciu
+
 		if (sim.animatorExists()) {
 			AnimShapeItem anim = new AnimShapeItem(AnimShape.CIRCLE, Color.BLUE, 12);
 			anim.setPosition(670, 500);

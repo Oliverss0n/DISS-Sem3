@@ -43,7 +43,6 @@ public class ProcessPresunVstup extends OSPABA.Process
 			double randX = minX + sim.getGenSeed().nextDouble() * (maxX - minX);
 			double randY = minY + sim.getGenSeed().nextDouble() * (maxY - minY);
 
-			// Animácia pohybu do nového bodu (randX, randY) v určitom čase[cite: 3]
 			patient.getAnimItem().moveTo(sim.currentTime(), travelTime, randX, randY);
 		}
 		//

@@ -32,9 +32,9 @@ public class ManagerZdrojov extends OSPABA.Manager
 
 		if (warmUp > 0.0) {
 			MyMessage msg = new MyMessage(sim);
-			msg.setCode(Mc.start); // Asistent sa VŽDY spúšťa kódom Mc.start
+			msg.setCode(Mc.start);
 			msg.setAddressee(myAgent().findAssistant(Id.schedulerZahrievania));
-			notice(msg); // Pošleme mu správu, nech začne odpočítavať
+			notice(msg);
 		}
 	}
 
@@ -88,10 +88,8 @@ public class ManagerZdrojov extends OSPABA.Manager
 		MyMessage msg = (MyMessage) message;
 		MySimulation sim = (MySimulation) mySim();
 
-		// Získame sestru, ktorá vyšetrovala pacienta
 		Nurse sestra = msg.getPatient().getAssignedNurse();
 
-		// Sestra skončila, vraciame ju do frontu voľných
 		myAgent().getFreeNurses().add(sestra);
 		sim.uvolniSestru(sestra.getAnimItem());
 
@@ -108,11 +106,10 @@ public class ManagerZdrojov extends OSPABA.Manager
 		MyMessage msg = (MyMessage) message;
 		MySimulation sim = (MySimulation) mySim();
 
-		// Získame konkrétny personál od pacienta
+
 		Nurse sestra = msg.getPatient().getAssignedNurse();
 		Doctor lekar = msg.getPatient().getAssignedDoctor();
 
-		// Personál vraciame do frontov voľných
 		myAgent().getFreeNurses().add(sestra);
 		myAgent().getFreeDoctors().add(lekar);
 
@@ -136,22 +133,18 @@ public class ManagerZdrojov extends OSPABA.Manager
 	private void checkQueues() {
 		boolean changed = true;
 		MySimulation sim = (MySimulation) mySim();
-
-		// Zistíme, či je zapnutý Variant 2
 		boolean isVariant2 = (sim.getVariant() == 2);
 
 		while (changed) {
 			changed = false;
 
-			// 1. NAJPRV OŠETRENIE A
-			// --- VARIANT 2 LOGIKA: Ak je zapnutý Variant 2, musíme mať voľné aspoň 2 sestry, inak Ošetrenie preskočíme ---
 			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesA() > 0 && !myAgent().getQueueExaminationA().isEmpty() && (!isVariant2 || myAgent().getFreeNurses().size() > 1)) {
 
 				MyMessage peekMsg = (MyMessage) myAgent().getQueueExaminationA().peek();
 
 				// --- VARIANT 1 LOGIKA ---
 				if (sim.getVariant() == 1 && myAgent().getFreeDoctors().size() == 1 && peekMsg.getPatient().getPriority() > 2) {
-					// Ochrana lekára - preskakujeme
+					//preskakujem
 				} else {
 					MyMessage msg = (MyMessage) myAgent().getQueueExaminationA().poll();
 					myAgent().getQueueExaminationB().remove(msg);
@@ -198,15 +191,14 @@ public class ManagerZdrojov extends OSPABA.Manager
 				}
 			}
 
-			// 2. POTOM OŠETRENIE B
-			// --- VARIANT 2 LOGIKA: Rovnaká ochrana 1 sestry pre Ošetrenie B ---
+			// --- VARIANT 2 ---
 			if (!myAgent().getFreeNurses().isEmpty() && !myAgent().getFreeDoctors().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueExaminationB().isEmpty() && (!isVariant2 || myAgent().getFreeNurses().size() > 1)) {
 
 				MyMessage peekMsg = (MyMessage) myAgent().getQueueExaminationB().peek();
 
 				// --- VARIANT 1 LOGIKA ---
 				if (sim.getVariant() == 1 && myAgent().getFreeDoctors().size() == 1 && peekMsg.getPatient().getPriority() > 2) {
-					// Ochrana lekára - preskakujeme
+					//  preskakujeme
 				} else {
 					MyMessage msg = (MyMessage) myAgent().getQueueExaminationB().poll();
 					myAgent().getQueueExaminationA().remove(msg);
@@ -252,8 +244,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 				}
 			}
 
-			// 3. AŽ NAKONIEC VSTUP (Ak zostali voľné sestry a voľná Ambulancia B)
-			// Vstup si kedykoľvek vezme sestru, ak nejaká voľná ostala
 			if (!myAgent().getFreeNurses().isEmpty() && myAgent().getFreeAmbulancesB() > 0 && !myAgent().getQueueEntrance().isEmpty()) {
 				MyMessage msg = (MyMessage) myAgent().getQueueEntrance().poll();
 
@@ -291,19 +281,18 @@ public class ManagerZdrojov extends OSPABA.Manager
 	{
 		myAgent().getWaitingTimeAmbulanceStat().clear();
 		myAgent().getWaitingTimeWalkInStat().clear();
-		myAgent().getEntryWaitAmbStat().clear();        // NOVÉ
-		myAgent().getEntryWaitWalkInStat().clear();     // NOVÉ
-		myAgent().getTreatmentWaitAmbStat().clear();    // NOVÉ
-		myAgent().getTreatmentWaitWalkInStat().clear(); // NOVÉ
+		myAgent().getEntryWaitAmbStat().clear();
+		myAgent().getEntryWaitWalkInStat().clear();
+		myAgent().getTreatmentWaitAmbStat().clear();
+		myAgent().getTreatmentWaitWalkInStat().clear();
 
-		// 2. Časovo-vážené štatistiky (TimeStat) - vyžadujú currentTime()
 		double now = mySim().currentTime();
 		myAgent().getNurseUtilizationStat().clear(now);
 		myAgent().getDoctorUtilizationStat().clear(now);
 		myAgent().getRoomAUtilizationStat().clear(now);
 		myAgent().getRoomBUtilizationStat().clear(now);
-		myAgent().getEntryQueueLengthStat().clear(now);     // NOVÉ
-		myAgent().getTreatmentQueueLengthStat().clear(now); // NOVÉ
+		myAgent().getEntryQueueLengthStat().clear(now);
+		myAgent().getTreatmentQueueLengthStat().clear(now);
 	}
 
 	//meta! userInfo="Generated code: do not modify", tag="begin"
@@ -352,22 +341,18 @@ public class ManagerZdrojov extends OSPABA.Manager
 	private void updateResourceUtilization() {
 		MySimulation sim = (MySimulation) mySim();
 
-		// Vyťaženie personálu
 		int busyNurses = sim.getNumNurses() - myAgent().getFreeNurses().size();
 		int busyDoctors = sim.getNumDoctors() - myAgent().getFreeDoctors().size();
 		myAgent().getNurseUtilizationStat().add(busyNurses);
 		myAgent().getDoctorUtilizationStat().add(busyDoctors);
 
-		// Vyťaženie ambulancií
 		int busyAmbA = 5 - myAgent().getFreeAmbulancesA();
 		int busyAmbB = 7 - myAgent().getFreeAmbulancesB();
 		myAgent().getRoomAUtilizationStat().add(busyAmbA);
 		myAgent().getRoomBUtilizationStat().add(busyAmbB);
 
-		// Rad na Vstup
 		myAgent().getEntryQueueLengthStat().add(myAgent().getQueueEntrance().size());
 
-		// Rad na Ošetrenie (Unikátni pacienti)
 		//vygenerovanie pomocou AI - sluzi na unikatne zaratanie pacienta, kedze je v 2 radoch naraz
 		java.util.HashSet<Integer> uniqueWaitingPatients = new java.util.HashSet<>();
 		for (Object obj : myAgent().getQueueExaminationA()) {
@@ -378,7 +363,6 @@ public class ManagerZdrojov extends OSPABA.Manager
 		}
 
 		myAgent().getTreatmentQueueLengthStat().add(uniqueWaitingPatients.size());
-		// TU už nič ďalšie netreba, tú duplicitu vymaž.
 	}
 
 

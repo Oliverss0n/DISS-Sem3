@@ -21,7 +21,6 @@ public class AgentOkolia extends OSPABA.Agent
 		MySimulation sim = (MySimulation) mySim;
 
 		walkArrivals = new ExponentialDist(572.6, sim.getGenSeed());
-		//walkArrivals = new ExponentialDist(50, sim.getGenSeed());
 		ambulanceArrivals = new ErlangDist(8, 364.5, -13.5, sim.getGenSeed());
 
 	}
