@@ -101,7 +101,19 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JTextField tfSettlingReps;
     private JButton btnDrawSettling;
 
-
+    // --- LOKÁLNE ŠTATISTIKY (Nové premenné) ---
+    // Časy
+    private JLabel lblLocTimeInSysAmb, lblLocTimeInSysWalkIn;
+    private JLabel lblLocAvgWaitAmb, lblLocAvgWaitWalkIn;
+    private JLabel lblLocEntryWaitAmb, lblLocEntryWaitWalk;
+    private JLabel lblLocTreatWaitAmb, lblLocTreatWaitWalk;
+    // Rady
+    private JLabel lblLocEntryQueue, lblLocTreatQueue;
+    // Vyťaženosť
+    private JLabel lblLocUtilNurses, lblLocUtilDoctors;
+    private JLabel lblLocUtilRoomA, lblLocUtilRoomB;
+    // Počty
+    private JLabel lblLocTotalPatients, lblLocTotalWalkIn, lblLocTotalAmb;
 
     // --- Štatistiky ---
     public MainGUI() {
@@ -673,20 +685,82 @@ public class MainGUI extends JFrame implements ISimDelegate {
     private JPanel buildStatsPanel() {
         JPanel p = new JPanel(new GridLayout(1, 2, 10, 10));
 
-        // --- AKTUÁLNY STAV (Ľavá strana - ponechaná z tvojho kódu) ---
-        JPanel curPanel = new JPanel(new GridLayout(6, 1));
-        curPanel.setBorder(BorderFactory.createTitledBorder("Aktuálny stav"));
+        // ==========================================
+        // ĽAVÁ STRANA - OKAMŽITÝ STAV A LOKÁLNE ŠTAT.
+        // ==========================================
+        JPanel leftSide = new JPanel(new BorderLayout(5, 5));
+
+        // 1. Okamžitý stav (Práve teraz)
+        JPanel curStatusPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        curStatusPanel.setBorder(BorderFactory.createTitledBorder("Okamžitý stav (Práve teraz)"));
+
         lblCurQueueEntrance = new JLabel("Rad na vstup: 0");
         lblCurQueueExam = new JLabel("Rad na ošetrenie: 0");
         lblCurFreeDoctors = new JLabel("Voľní lekári: 0");
         lblCurFreeNurses = new JLabel("Voľné sestry: 0");
         lblAmbAStatus = new JLabel("Amb A: ");
         lblAmbBStatus = new JLabel("Amb B: ");
-        curPanel.add(lblCurQueueEntrance); curPanel.add(lblCurQueueExam);
-        curPanel.add(lblCurFreeDoctors); curPanel.add(lblCurFreeNurses);
-        curPanel.add(lblAmbAStatus); curPanel.add(lblAmbBStatus);
 
-        // --- GLOBÁLNE ŠTATISTIKY (Pravá strana - mriežka 2x2) ---
+        curStatusPanel.add(lblCurQueueEntrance); curStatusPanel.add(lblCurQueueExam);
+        curStatusPanel.add(lblCurFreeDoctors); curStatusPanel.add(lblCurFreeNurses);
+        curStatusPanel.add(lblAmbAStatus); curStatusPanel.add(lblAmbBStatus);
+
+        // 2. Lokálne štatistiky (4 bloky)
+        JPanel mainLocPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        mainLocPanel.setBorder(BorderFactory.createTitledBorder("Lokálne štatistiky (Aktuálna replikácia)"));
+
+        // Blok 1: Časy
+        JPanel pnlLocTimes = new JPanel(new GridLayout(0, 1));
+        pnlLocTimes.setBorder(BorderFactory.createTitledBorder("Časy (minúty)"));
+        lblLocTimeInSysAmb = new JLabel("Systém (Sanitky): -");
+        lblLocTimeInSysWalkIn = new JLabel("Systém (Peší): -");
+        lblLocAvgWaitAmb = new JLabel("Celk. čak. (Sanitky): -");
+        lblLocAvgWaitWalkIn = new JLabel("Celk. čak. (Peší): -");
+        lblLocEntryWaitAmb = new JLabel("Čak. VSTUP (Sanitky): -");
+        lblLocEntryWaitWalk = new JLabel("Čak. VSTUP (Peší): -");
+        lblLocTreatWaitAmb = new JLabel("Čak. OŠETRENIE (Sanitky): -");
+        lblLocTreatWaitWalk = new JLabel("Čak. OŠETRENIE (Peší): -");
+        pnlLocTimes.add(lblLocTimeInSysAmb); pnlLocTimes.add(lblLocTimeInSysWalkIn);
+        pnlLocTimes.add(lblLocAvgWaitAmb); pnlLocTimes.add(lblLocAvgWaitWalkIn);
+        pnlLocTimes.add(lblLocEntryWaitAmb); pnlLocTimes.add(lblLocEntryWaitWalk);
+        pnlLocTimes.add(lblLocTreatWaitAmb); pnlLocTimes.add(lblLocTreatWaitWalk);
+
+        // Blok 2: Rady
+        JPanel pnlLocQueues = new JPanel(new GridLayout(0, 1));
+        pnlLocQueues.setBorder(BorderFactory.createTitledBorder("Rady (Priemerná dĺžka)"));
+        lblLocEntryQueue = new JLabel("Rad na Vstup: -");
+        lblLocTreatQueue = new JLabel("Rad na Ošetrenie: -");
+        pnlLocQueues.add(lblLocEntryQueue); pnlLocQueues.add(lblLocTreatQueue);
+
+        // Blok 3: Vyťaženosť
+        JPanel pnlLocUtils = new JPanel(new GridLayout(0, 1));
+        pnlLocUtils.setBorder(BorderFactory.createTitledBorder("Vyťaženosť (%)"));
+        lblLocUtilNurses = new JLabel("Sestry: -");
+        lblLocUtilDoctors = new JLabel("Lekári: -");
+        lblLocUtilRoomA = new JLabel("Amb A (Ošetrenie): -");
+        lblLocUtilRoomB = new JLabel("Amb B (Vstup+Ošetr.): -");
+        pnlLocUtils.add(lblLocUtilNurses); pnlLocUtils.add(lblLocUtilDoctors);
+        pnlLocUtils.add(lblLocUtilRoomA); pnlLocUtils.add(lblLocUtilRoomB);
+
+        // Blok 4: Priechodnosť
+        JPanel pnlLocCounts = new JPanel(new GridLayout(0, 1));
+        pnlLocCounts.setBorder(BorderFactory.createTitledBorder("Vybavení pacienti"));
+        lblLocTotalPatients = new JLabel("Spolu: -");
+        lblLocTotalWalkIn = new JLabel(" - Peší: -");
+        lblLocTotalAmb = new JLabel(" - Sanitky: -");
+        pnlLocCounts.add(lblLocTotalPatients); pnlLocCounts.add(lblLocTotalWalkIn); pnlLocCounts.add(lblLocTotalAmb);
+
+        mainLocPanel.add(pnlLocTimes);
+        mainLocPanel.add(pnlLocQueues);
+        mainLocPanel.add(pnlLocUtils);
+        mainLocPanel.add(pnlLocCounts);
+
+        leftSide.add(curStatusPanel, BorderLayout.NORTH);
+        leftSide.add(mainLocPanel, BorderLayout.CENTER);
+
+        // ==========================================
+        // PRAVÁ STRANA - GLOBÁLNE ŠTATISTIKY
+        // ==========================================
         JPanel mainGlobPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         mainGlobPanel.setBorder(BorderFactory.createTitledBorder("Globálne štatistiky"));
 
@@ -734,13 +808,12 @@ public class MainGUI extends JFrame implements ISimDelegate {
         lblGlobTotalAmb = new JLabel(" - Sanitky: -");
         pnlCounts.add(lblGlobTotalPatients); pnlCounts.add(lblGlobTotalWalkIn); pnlCounts.add(lblGlobTotalAmb);
 
-        // Vloženie blokov do hlavnej mriežky
         mainGlobPanel.add(pnlTimes);
         mainGlobPanel.add(pnlQueues);
         mainGlobPanel.add(pnlUtils);
         mainGlobPanel.add(pnlCounts);
 
-        p.add(curPanel);
+        p.add(leftSide);
         p.add(mainGlobPanel);
         return p;
     }
@@ -1092,32 +1165,47 @@ public class MainGUI extends JFrame implements ISimDelegate {
 
             MySimulation mySim = (MySimulation) smltn;
 
-            // --- OPRAVENÉ VOLANIA ŠTATISTÍK (cez agentZdrojov) ---
+            // ========================================================
+            // SPRÁVNE VOLANIA LOKÁLNYCH ŠTATISTÍK PRE UI
+            // ========================================================
 
-            // 1. Čakanie - Sanitky (Aktuálna replikácia)
-            double waitAmbMean = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getMean() / 60.0;
-            double waitAmbLow = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalLower() / 60.0;
-            double waitAmbHigh = mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getConfidenceIntervalUpper() / 60.0;
-            lblGlobAvgWaitAmbulance.setText(String.format("Wait (Amb): %.2f min <%.2f, %.2f>", waitAmbMean, waitAmbLow, waitAmbHigh));
+            // --- 1. BLOK: Časy (zobrazujeme priemer bežiacej replikácie) ---
+            lblLocTimeInSysAmb.setText(String.format("Systém (Sanitky): %.2f min", mySim.agentZdrojov().getTimeInSystemAmbStat().getMean() / 60.0));
+            lblLocTimeInSysWalkIn.setText(String.format("Systém (Peší): %.2f min", mySim.agentZdrojov().getTimeInSystemWalkInStat().getMean() / 60.0));
 
-            // 2. Čakanie - Peší (Aktuálna replikácia)
-            double waitWalkInMean = mySim.agentZdrojov().getWaitingTimeWalkInStat().getMean() / 60.0;
-            double waitWalkInLow = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalLower() / 60.0;
-            double waitWalkInHigh = mySim.agentZdrojov().getWaitingTimeWalkInStat().getConfidenceIntervalUpper() / 60.0;
-            lblGlobAvgWaitWalkIn.setText(String.format("Wait (Walk-in): %.2f min <%.2f, %.2f>", waitWalkInMean, waitWalkInLow, waitWalkInHigh));
+            lblLocAvgWaitAmb.setText(String.format("Celk. čak. (Sanitky): %.2f min", mySim.agentZdrojov().getWaitingTimeAmbulanceStat().getMean() / 60.0));
+            lblLocAvgWaitWalkIn.setText(String.format("Celk. čak. (Peší): %.2f min", mySim.agentZdrojov().getWaitingTimeWalkInStat().getMean() / 60.0));
 
-            // 3. Vyťaženie - Sestry (Aktuálna replikácia)
+            lblLocEntryWaitAmb.setText(String.format("Čak. VSTUP (Sanitky): %.2f min", mySim.agentZdrojov().getEntryWaitAmbStat().getMean() / 60.0));
+            lblLocEntryWaitWalk.setText(String.format("Čak. VSTUP (Peší): %.2f min", mySim.agentZdrojov().getEntryWaitWalkInStat().getMean() / 60.0));
+
+            lblLocTreatWaitAmb.setText(String.format("Čak. OŠETRENIE (Sanitky): %.2f min", mySim.agentZdrojov().getTreatmentWaitAmbStat().getMean() / 60.0));
+            lblLocTreatWaitWalk.setText(String.format("Čak. OŠETRENIE (Peší): %.2f min", mySim.agentZdrojov().getTreatmentWaitWalkInStat().getMean() / 60.0));
+
+            // --- 2. BLOK: Rady (priemerná dĺžka počas bežiacej replikácie) ---
+            lblLocEntryQueue.setText(String.format("Rad na Vstup: %.2f", mySim.agentZdrojov().getEntryQueueLengthStat().getMean()));
+            lblLocTreatQueue.setText(String.format("Rad na Ošetrenie: %.2f", mySim.agentZdrojov().getTreatmentQueueLengthStat().getMean()));
+
+            // --- 3. BLOK: Vyťaženosť ---
             double totalNurses = mySim.getNumNurses();
             double utilNursesMean = mySim.agentZdrojov().getNurseUtilizationStat().getMean();
-            double utilNursesPct = (totalNurses > 0) ? (utilNursesMean / totalNurses) * 100 : 0;
-            lblGlobUtilNurses.setText(String.format("Nurses Util.: %.2f%% (%.1f/%d)", utilNursesPct, utilNursesMean, (int)totalNurses));
+            lblLocUtilNurses.setText(String.format("Sestry: %.2f %%", (totalNurses > 0) ? (utilNursesMean / totalNurses) * 100 : 0));
 
-            // 4. Vyťaženie - Lekári (Aktuálna replikácia)
             double totalDoctors = mySim.getNumDoctors();
             double utilDoctorsMean = mySim.agentZdrojov().getDoctorUtilizationStat().getMean();
-            double utilDoctorsPct = (totalDoctors > 0) ? (utilDoctorsMean / totalDoctors) * 100 : 0;
-            lblGlobUtilDoctors.setText(String.format("Doctors Util.: %.2f%% (%.1f/%d)", utilDoctorsPct, utilDoctorsMean, (int)totalDoctors));
+            lblLocUtilDoctors.setText(String.format("Lekári: %.2f %%", (totalDoctors > 0) ? (utilDoctorsMean / totalDoctors) * 100 : 0));
 
+            lblLocUtilRoomA.setText(String.format("Amb A (Ošetrenie): %.2f %%", (mySim.agentZdrojov().getRoomAUtilizationStat().getMean() / 5.0) * 100));
+            lblLocUtilRoomB.setText(String.format("Amb B (Vstup+Ošetr.): %.2f %%", (mySim.agentZdrojov().getRoomBUtilizationStat().getMean() / 7.0) * 100));
+
+            // --- 4. BLOK: Počty (Priechodnosť) ---
+            // Počet vybavených pacientov = veľkosť vzorky štatistiky času v systéme
+            int ambCount = mySim.agentZdrojov().getTimeInSystemAmbStat().getCount();
+            int walkInCount = mySim.agentZdrojov().getTimeInSystemWalkInStat().getCount();
+
+            lblLocTotalPatients.setText(String.format("Spolu: %d", ambCount + walkInCount));
+            lblLocTotalWalkIn.setText(String.format(" - Peší: %d", walkInCount));
+            lblLocTotalAmb.setText(String.format(" - Sanitky: %d", ambCount));
         });
     }
 
