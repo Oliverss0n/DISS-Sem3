@@ -9,10 +9,8 @@ import entities.Doctor;
 import entities.Nurse;
 import entities.Patient;
 import OSPDataStruct.SimQueue;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-import java.util.Queue;
+
+import java.util.*;
 
 //meta! id="41"
 public class AgentZdrojov extends OSPABA.Agent
@@ -61,6 +59,7 @@ public class AgentZdrojov extends OSPABA.Agent
 		roomBUtilizationStat = new TimeStat(mySim);
 		entryQueueLengthStat = new TimeStat(mySim);
 		treatmentQueueLengthStat = new TimeStat(mySim);
+		addOwnMessage(Mc.koniecZahrievania);
 	}
 
 	@Override
@@ -128,7 +127,6 @@ public class AgentZdrojov extends OSPABA.Agent
 		addOwnMessage(Mc.uvolniZdrojeVstup);
 		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 		addOwnMessage(Mc.reqZdrojeVstup);
-		addOwnMessage(Mc.koniecZahrievania);
 	}
 	//meta! tag="end"
 
@@ -215,5 +213,50 @@ public class AgentZdrojov extends OSPABA.Agent
 	public Stat getTreatmentWaitAmbStat() { return treatmentWaitAmbStat; }
 	public Stat getTreatmentWaitWalkInStat() { return treatmentWaitWalkInStat; }
 	public TimeStat getTreatmentQueueLengthStat() { return treatmentQueueLengthStat; }
+
+	//zapuzdrenie
+	public boolean hasFreeNurses() { return !freeNurses.isEmpty(); }
+	public boolean hasFreeDoctors() { return !freeDoctors.isEmpty(); }
+	public int getFreeNursesCount() { return freeNurses.size(); }
+	public int getFreeDoctorsCount() { return freeDoctors.size(); }
+	public Nurse pollFreeNurse() { return freeNurses.poll(); }
+	public Doctor pollFreeDoctor() { return freeDoctors.poll(); }
+
+	public void decrementFreeAmbulancesA() { this.freeAmbulancesA--; }
+	public void decrementFreeAmbulancesB() { this.freeAmbulancesB--; }
+
+	public boolean isQueueExaminationAEmpty() { return queueExaminationA.isEmpty(); }
+	public MyMessage peekQueueExaminationA() { return (MyMessage) queueExaminationA.peek(); }
+	public MyMessage pollQueueExaminationA() { return (MyMessage) queueExaminationA.poll(); }
+	public void removeFromQueueExaminationA(MyMessage msg) { queueExaminationA.remove(msg); }
+
+	public boolean isQueueExaminationBEmpty() { return queueExaminationB.isEmpty(); }
+	public MyMessage peekQueueExaminationB() { return (MyMessage) queueExaminationB.peek(); }
+	public MyMessage pollQueueExaminationB() { return (MyMessage) queueExaminationB.poll(); }
+	public void removeFromQueueExaminationB(MyMessage msg) { queueExaminationB.remove(msg); }
+
+	public boolean isQueueEntranceEmpty() { return queueEntrance.isEmpty(); }
+	public MyMessage pollQueueEntrance() { return (MyMessage) queueEntrance.poll(); }
+	public int getQueueEntranceCount() { return queueEntrance.size(); }
+	public void recordTreatmentWaitAmb(double wait) { treatmentWaitAmbStat.add(wait); }
+	public void recordTreatmentWaitWalkIn(double wait) { treatmentWaitWalkInStat.add(wait); }
+	public void recordWaitingTimeAmbulance(double wait) { waitingTimeAmbulanceStat.add(wait); }
+	public void recordWaitingTimeWalkIn(double wait) { waitingTimeWalkInStat.add(wait); }
+	public void recordEntryWaitAmb(double wait) { entryWaitAmbStat.add(wait); }
+	public void recordEntryWaitWalkIn(double wait) { entryWaitWalkInStat.add(wait); }
+
+
+
+	// pomocna metoda vygenerovana AI
+	public int getUniquePatientsInTreatmentQueues() {
+		HashSet<Integer> uniqueWaitingPatients = new HashSet<>();
+		for (Object obj : queueExaminationA) {
+			uniqueWaitingPatients.add(((MyMessage) obj).getPatient().getId());
+		}
+		for (Object obj : queueExaminationB) {
+			uniqueWaitingPatients.add(((MyMessage) obj).getPatient().getId());
+		}
+		return uniqueWaitingPatients.size();
+	}
 
 }

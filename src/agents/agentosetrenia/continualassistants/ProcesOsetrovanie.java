@@ -54,6 +54,15 @@ public class ProcesOsetrovanie extends OSPABA.Process
 	{
 		switch (message.code())
 		{
+			case Mc.koniecZdrzania:
+				/*vygenerovala AI*/
+				MySimulation sim = (MySimulation) mySim();
+				entities.Patient pacient = ((MyMessage) message).getPatient();
+				if (pacient.getAnimItem() != null) {
+					pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
+				}
+				assistantFinished(message);
+				break;
 		}
 	}
 
@@ -65,20 +74,11 @@ public class ProcesOsetrovanie extends OSPABA.Process
 		{
 			case Mc.start:
 				processStart(message);
-				break;
+			break;
 
-			case Mc.koniecZdrzania:
-				/*vygenerovala AI, pretoze mi nemizli*/
-				MySimulation sim = (MySimulation) mySim();
-				entities.Patient pacient = ((MyMessage) message).getPatient();
-				if (pacient.getAnimItem() != null) {
-					pacient.getAnimItem().moveTo(sim.currentTime(), 0.5, 1000, 800);
-				}
-				assistantFinished(message);
-				break;
 			default:
 				processDefault(message);
-				break;
+			break;
 		}
 	}
 	//meta! tag="end"

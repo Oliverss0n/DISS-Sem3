@@ -12,7 +12,7 @@ public class AgentOkolia extends OSPABA.Agent
 {
 	private ExponentialDist walkArrivals;
 	private ErlangDist ambulanceArrivals;
-	//test
+
 	public AgentOkolia(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);

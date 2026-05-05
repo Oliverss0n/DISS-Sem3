@@ -17,6 +17,7 @@ public class AgentOsetrenia extends OSPABA.Agent
 	public AgentOsetrenia(int id, Simulation mySim, Agent parent)
 	{
 		super(id, mySim, parent);
+
 		init();
 		MySimulation sim = (MySimulation) mySim;
 		walkInExamDurationGen = new ContinuousEmpiricDist(
@@ -26,6 +27,7 @@ public class AgentOsetrenia extends OSPABA.Agent
 				sim.getGenSeed()
 		);
 		ambulanceExamDurationGen = new ContinuousUniformDist(15,30, sim.getGenSeed());
+		addOwnMessage(Mc.koniecZdrzania);
 	}
 
 	@Override
@@ -42,7 +44,7 @@ public class AgentOsetrenia extends OSPABA.Agent
 		new ProcesOsetrovanie(Id.procesOsetrovanie, mySim(), this);
 		addOwnMessage(Mc.presunNaOsetrenie);
 		addOwnMessage(Mc.reqZdrojeOsetrenie);
-		addOwnMessage(Mc.koniecZdrzania);
+
 	}
 	//meta! tag="end"
 

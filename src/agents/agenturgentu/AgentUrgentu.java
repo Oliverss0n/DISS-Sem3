@@ -26,6 +26,7 @@ public class AgentUrgentu extends OSPABA.Agent
 		this.moveBetweenAmbulancesGen = new TriangularDist(15.0,45.0,20.0, sim.getGenSeed());
 		this.moveExitGen = new ContinuousUniformDist(150.0, 240.0, sim.getGenSeed());
 		init();
+		addOwnMessage(Mc.koniecZdrzania);
 	}
 
 	@Override
@@ -49,7 +50,7 @@ public class AgentUrgentu extends OSPABA.Agent
 		addOwnMessage(Mc.uvolniZdrojeOsetrenie);
 		addOwnMessage(Mc.novyPacient);
 		addOwnMessage(Mc.odchodPacienta);
-		addOwnMessage(Mc.koniecZdrzania);
+
 	}
 	//meta! tag="end"
 

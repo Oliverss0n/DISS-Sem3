@@ -40,7 +40,9 @@ public class AgentVstupnehoVystrenia extends OSPABA.Agent
 				sim.getGenSeed()
 		);
 
+
 		init();
+		addOwnMessage(Mc.koniecZdrzania);
 	}
 
 	@Override
@@ -57,7 +59,7 @@ public class AgentVstupnehoVystrenia extends OSPABA.Agent
 		new ProcesVstup(Id.procesVstup, mySim(), this);
 		addOwnMessage(Mc.reqZdrojeVstup);
 		addOwnMessage(Mc.novyPacient);
-		addOwnMessage(Mc.koniecZdrzania);
+
 	}
 	//meta! tag="end"
 

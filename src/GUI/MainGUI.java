@@ -17,15 +17,6 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
-import OSPAnimator.AnimShape;
-import OSPAnimator.AnimShapeItem;
-import OSPAnimator.AnimTextItem;
-import javax.imageio.ImageIO;
-import java.io.File;
-import java.io.IOException;
-import java.awt.image.BufferedImage;
-import OSPAnimator.AnimQueue;
-
 
 public class MainGUI extends JFrame implements ISimDelegate {
 

@@ -55,6 +55,9 @@ public class ProcessPresunVstup extends OSPABA.Process
 	{
 		switch (message.code())
 		{
+			case Mc.koniecZdrzania:
+				assistantFinished(message);
+				break;
 		}
 	}
 
@@ -66,10 +69,6 @@ public class ProcessPresunVstup extends OSPABA.Process
 		{
 			case Mc.start:
 				processStart(message);
-				break;
-
-			case Mc.koniecZdrzania:
-				assistantFinished(message);
 				break;
 
 			default:

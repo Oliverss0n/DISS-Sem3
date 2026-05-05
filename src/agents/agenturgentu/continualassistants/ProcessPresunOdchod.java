@@ -41,6 +41,9 @@ public class ProcessPresunOdchod extends OSPABA.Process
 	{
 		switch (message.code())
 		{
+			case Mc.koniecZdrzania:
+				assistantFinished(message);
+				break;
 		}
 	}
 
@@ -54,9 +57,7 @@ public class ProcessPresunOdchod extends OSPABA.Process
 				processStart(message);
 				break;
 
-			case Mc.koniecZdrzania:
-				assistantFinished(message);
-				break;
+
 
 			default:
 				processDefault(message);
